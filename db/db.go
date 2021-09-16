@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"github.com/cellargalaxy/go_common/util"
-	"github.com/cellargalaxy/server-center/config"
+	"github.com/cellargalaxy/server_center/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"

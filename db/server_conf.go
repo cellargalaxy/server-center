@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cellargalaxy/server-center/model"
+	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

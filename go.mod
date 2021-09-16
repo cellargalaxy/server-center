@@ -1,4 +1,4 @@
-module github.com/cellargalaxy/server-center
+module github.com/cellargalaxy/server_center
 
 go 1.16
 

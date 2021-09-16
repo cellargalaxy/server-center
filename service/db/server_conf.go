@@ -3,8 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/cellargalaxy/server-center/db"
-	"github.com/cellargalaxy/server-center/model"
+	"github.com/cellargalaxy/server_center/db"
+	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
 )
 

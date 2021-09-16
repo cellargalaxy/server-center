@@ -15,5 +15,5 @@
 # vendor/
 
 .idea
-server-center
+server_center
 *.log
