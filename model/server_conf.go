@@ -6,7 +6,7 @@ type ServerConf struct {
 	ServerName string `json:"server_name" gorm:"data"`
 	Version    int    `json:"version" gorm:"version"`
 	Remark     string `json:"remark" gorm:"remark"`
-	ConfText   string `json:"conf_text" gorm:"conf_text"`
+	ConfText   string `json:"-" gorm:"conf_text"`
 }
 
 func (this ServerConf) String() string {
@@ -32,5 +32,68 @@ type ServerConfInquiry struct {
 }
 
 func (this ServerConfInquiry) String() string {
+	return util.ToJsonString(this)
+}
+
+type AddServerConfRequest struct {
+	ServerConf
+}
+
+func (this AddServerConfRequest) String() string {
+	return util.ToJsonString(this)
+}
+
+type AddServerConfResponse struct {
+	Conf *ServerConfModel `json:"conf"`
+}
+
+func (this AddServerConfResponse) String() string {
+	return util.ToJsonString(this)
+}
+
+type GetLastServerConfRequest struct {
+	ServerConfInquiry
+}
+
+func (this GetLastServerConfRequest) String() string {
+	return util.ToJsonString(this)
+}
+
+type GetLastServerConfResponse struct {
+	Conf *ServerConfModel `json:"conf"`
+}
+
+func (this GetLastServerConfResponse) String() string {
+	return util.ToJsonString(this)
+}
+
+type ListServerConfRequest struct {
+	ServerConfInquiry
+}
+
+func (this ListServerConfRequest) String() string {
+	return util.ToJsonString(this)
+}
+
+type ListServerConfResponse struct {
+	List []ServerConfModel `json:"list"`
+}
+
+func (this ListServerConfResponse) String() string {
+	return util.ToJsonString(this)
+}
+
+type ListAllServerNameRequest struct {
+}
+
+func (this ListAllServerNameRequest) String() string {
+	return util.ToJsonString(this)
+}
+
+type ListAllServerNameResponse struct {
+	List []string `json:"list"`
+}
+
+func (this ListAllServerNameResponse) String() string {
 	return util.ToJsonString(this)
 }
