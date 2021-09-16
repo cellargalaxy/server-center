@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/PuerkitoBio/goquery v1.7.1
 	github.com/adshao/go-binance/v2 v2.3.1
-	github.com/cellargalaxy/go_common v0.0.0-20210904124816-34ab30e73b38
+	github.com/cellargalaxy/go_common v0.0.0-20210916090440-0fb661f53a46
 	github.com/cellargalaxy/msg-gateway v0.0.0-20210904070238-ef52e1266aea
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.7.4

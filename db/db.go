@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-const MaxBatchAddLength = 1000
-
 var db *gorm.DB
 
 func init() {

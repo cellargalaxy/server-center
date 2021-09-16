@@ -3,29 +3,17 @@ package config
 import (
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server-center/model"
-	"github.com/go-ini/ini"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	configFilePath = "resources/config.ini"
 )
 
 var Config = model.Config{}
 
 func init() {
 	ctx := util.CreateLogCtx()
-	exist, _ := util.ExistAndIsFile(ctx, configFilePath)
-	if exist {
-		cfg, err := ini.Load(configFilePath)
-		if err != nil {
-			panic(err)
-		}
-		err = cfg.MapTo(&Config)
-		if err != nil {
-			panic(err)
-		}
-	}
+	Config.LogLevel = logrus.Level(util.GetEnvInt("log_level", int(Config.LogLevel)))
+	Config.MysqlDsn = util.GetEnvString("mysql_dsn", Config.MysqlDsn)
+	Config.ShowSql = util.GetEnvBool("show_sql", Config.ShowSql)
+	Config.Secret = util.GetEnvString("secret", Config.Secret)
 	checkAndResetConfig()
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"Config": Config}).Info("加载配置")
 }
