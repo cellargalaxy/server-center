@@ -36,12 +36,11 @@ function enJwt() {
     const exp = getTokenExp()
     const header = {'typ': 'JWT', 'alg': 'HS256'}
     const headerJson = JSON.stringify(header)
-    const payload = {'iat': timeStamp, 'exp': timeStamp + exp}
+    const payload = {'iat': timeStamp, 'exp': timeStamp + exp, 'allow_re_request': false, 'request_id': genId()}
     const payloadJson = JSON.stringify(payload)
     const secret = getSecret()
     const secretHex = enSha256Hex(secret)
-    const jwt = KJUR.jws.JWS.sign("HS256", headerJson, payloadJson, {hex: secretHex})
-    return jwt
+    return KJUR.jws.JWS.sign("HS256", headerJson, payloadJson, {hex: secretHex})
 }
 
 function isNum(s) {
@@ -53,4 +52,107 @@ function isNum(s) {
 
 function getTimeStamp() {
     return Date.parse(new Date()) / 1000
+}
+
+function formatTimestamp(timestamp, fmt) {
+    return formatDate(new Date(timestamp), fmt)
+}
+
+function formatDate(date, fmt) {
+    let o = {
+        'M+': date.getMonth() + 1, //月份
+        'D+': date.getDate(), //日
+        'H+': date.getHours(), //小时
+        'm+': date.getMinutes(), //分
+        's+': date.getSeconds(), //秒
+        'q+': Math.floor((date.getMonth() + 3) / 3), //季度
+        'S': date.getMilliseconds() //毫秒
+    }
+    if (/(Y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length))
+    }
+    for (let k in o) {
+        if (new RegExp('(' + k + ')').test(fmt)) {
+            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? (o[k]) : (('00' + o[k]).substr(('' + o[k]).length)))
+        }
+    }
+    return fmt
+}
+
+function genId() {
+    return 'web_' + formatDate(new Date(), 'YYMMDDHHmmssS')
+}
+
+function getQueryString(name) {
+    let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i")
+    let r = window.location.search.substr(1).match(reg)
+    if (r != null) {
+        return decodeURIComponent(r[2])
+    }
+    return null
+}
+
+function startsWith(string, start) {
+    return string.indexOf(start) === 0
+}
+
+function containWith(string, sub) {
+    return string.indexOf(sub) >= 0
+}
+
+function isNum(s) {
+    if (s != null && s !== '') {
+        return !isNaN(s)
+    }
+    return false
+}
+
+function toString(value) {
+    if (value === null || typeof value === 'undefined') {
+        return ''
+    } else if (value instanceof Object) {
+        return Object.keys(value)
+            .sort()
+            .map(key => toString(value[key]))
+            .join(' ')
+    } else {
+        return String(value)
+    }
+}
+
+function getAddYearDate(year) {
+    let before = new Date()
+    before.setFullYear(before.getFullYear() + year)
+    return before
+}
+
+function parse2BeijingTimestamp(date) {
+    let timestamp = 0
+    if (date !== undefined && date != null && date !== '') {
+        timestamp = Date.parse(date + ' GMT+8') / 1000
+    }
+    if (!isNum(timestamp)) {
+        timestamp = 0
+    }
+    return timestamp
+}
+
+
+function log(...data) {
+    console.log('log', data)
+}
+
+function sortCompare(aRow, bRow, key, sortDesc, formatter, compareOptions, compareLocale) {
+    let a = aRow[key]
+    let b = bRow[key]
+    if (isNum(a) && isNum(b)) {
+        a = parseFloat(a)
+        b = parseFloat(b)
+        return a < b ? -1 : a > b ? 1 : 0
+    }
+    return toString(a).localeCompare(toString(b), compareLocale, compareOptions)
+}
+
+function isNone(value) {
+    return code === undefined || code == null || code === ''
 }
