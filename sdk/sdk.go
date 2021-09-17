@@ -124,9 +124,14 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 		return nil, nil
 	}
 	object, err := this.GetLastServerConf(ctx)
-	if object == nil || err != nil {
+	if err != nil {
 		return nil, err
 	}
+	if object == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"current_version": this.conf.Version}).Info("查询并解析最新服务配置，服务配置无更新")
+		return nil, nil
+	}
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"current_version": this.conf.Version, "last_version": object.Version}).Info("查询并解析最新服务配置，服务配置更新")
 	err = this.handler.ParseConf(ctx, *object)
 	if err == nil {
 		this.conf = *object

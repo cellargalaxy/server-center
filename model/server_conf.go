@@ -6,7 +6,7 @@ type ServerConf struct {
 	ServerName string `json:"server_name" gorm:"data" form:"data"`
 	Version    int    `json:"version" gorm:"version" form:"version"`
 	Remark     string `json:"remark" gorm:"remark" form:"remark"`
-	ConfText   string `json:"-" gorm:"conf_text" form:"conf_text"`
+	ConfText   string `json:"conf_text" gorm:"conf_text" form:"conf_text"`
 }
 
 func (this ServerConf) String() string {

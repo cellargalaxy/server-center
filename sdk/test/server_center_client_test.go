@@ -12,7 +12,7 @@ import (
 
 /**
 export server_name=server_center
-export server_center_address=http://127.0.0.1:7557/api/getLastServerConf
+export server_center_address=http://127.0.0.1:7557
 export server_center_secret=secret
 */
 
@@ -20,7 +20,7 @@ type ServerCenterHandler struct {
 }
 
 func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
-	fmt.Printf("解析配置: %+v\n", util.ToJsonIndentString(object))
+	fmt.Printf("解析配置: \n%+v\n", object.ConfText)
 	return nil
 }
 

@@ -13,11 +13,11 @@ func addServerConf(ctx *gin.Context) {
 	var request model.AddServerConfRequest
 	err := ctx.BindJSON(&request)
 	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request, "err": err}).Error("插入服务配置，请求参数解析异常")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("插入服务配置，请求参数解析异常")
 		ctx.JSON(http.StatusOK, util.CreateErrResponse(err.Error()))
 		return
 	}
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request}).Info("插入服务配置")
+	logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("插入服务配置")
 	ctx.JSON(http.StatusOK, util.CreateResponse(controller.AddServerConf(ctx, request)))
 }
 

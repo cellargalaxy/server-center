@@ -19,7 +19,17 @@ func AddServerConf(ctx context.Context, object model.ServerConf) (model.ServerCo
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("插入服务配置，Version为空")
 		return conf, fmt.Errorf("插入服务配置，Version为空")
 	}
-	conf, err := db.InsertServerConf(ctx, conf)
+	var inquiry model.ServerConfInquiry
+	inquiry.ServerName = conf.ServerName
+	last, err := GetLastServerConf(ctx, inquiry)
+	if err != nil {
+		return conf, err
+	}
+	if last != nil && conf.Version <= last.Version {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("插入服务配置，Version过小")
+		return conf, fmt.Errorf("插入服务配置，Version过小")
+	}
+	conf, err = db.InsertServerConf(ctx, conf)
 	return conf, err
 }
 
