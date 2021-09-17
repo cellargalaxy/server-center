@@ -23,9 +23,9 @@ func checkAndResetConfig() {
 		Config.LogLevel = logrus.InfoLevel
 	}
 	if Config.MysqlDsn == "" {
-		panic("MysqlDsn为空")
+		panic("mysql_dsn为空")
 	}
 	if Config.Secret == "" {
-		panic("Secret为空")
+		panic("secret为空")
 	}
 }

@@ -3,10 +3,10 @@ package model
 import "github.com/cellargalaxy/go_common/util"
 
 type ServerConf struct {
-	ServerName string `json:"server_name" gorm:"data"`
-	Version    int    `json:"version" gorm:"version"`
-	Remark     string `json:"remark" gorm:"remark"`
-	ConfText   string `json:"-" gorm:"conf_text"`
+	ServerName string `json:"server_name" gorm:"data" form:"data"`
+	Version    int    `json:"version" gorm:"version" form:"version"`
+	Remark     string `json:"remark" gorm:"remark" form:"remark"`
+	ConfText   string `json:"-" gorm:"conf_text" form:"conf_text"`
 }
 
 func (this ServerConf) String() string {
@@ -28,7 +28,7 @@ func (ServerConfModel) TableName() string {
 
 type ServerConfInquiry struct {
 	ServerConfModel
-	CurrentVersion int `json:"version"`
+	CurrentVersion int `json:"current_version" form:"current_version"`
 }
 
 func (this ServerConfInquiry) String() string {

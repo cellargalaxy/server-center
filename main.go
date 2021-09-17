@@ -9,10 +9,11 @@ import (
 
 func init() {
 	logrus.SetLevel(config.Config.LogLevel)
-	util.InitLog("server_center")
+	util.InitLog(util.GetServerNameWithPanic())
 }
 
 /**
+server_name=server_center
 log_level=4
 mysql_dsn=root:123456@tcp(127.0.0.1:3306)/server_center?charset=utf8mb4&parseTime=True&loc=Local&tls=preferred
 show_sql=false
