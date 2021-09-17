@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+/**
+export server_name=server_center
+export server_center_address=http://127.0.0.1:7557/api/getLastServerConf
+export server_center_secret=secret
+*/
+
 type ServerCenterHandler struct {
 }
 
