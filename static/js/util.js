@@ -152,7 +152,3 @@ function sortCompare(aRow, bRow, key, sortDesc, formatter, compareOptions, compa
     }
     return toString(a).localeCompare(toString(b), compareLocale, compareOptions)
 }
-
-function isNone(value) {
-    return code === undefined || code == null || code === ''
-}
