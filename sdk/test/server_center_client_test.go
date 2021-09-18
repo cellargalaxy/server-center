@@ -13,12 +13,23 @@ import (
 /**
 export server_name=server_center
 export server_center_address=http://127.0.0.1:7557
-export server_center_secret=secret
+export server_center_secret=secret_secret
+
+server_name=server_center;server_center_address=http://127.0.0.1:7557;server_center_secret=secret_secret
 */
 
 type ServerCenterHandler struct {
 }
 
+func (this *ServerCenterHandler) GetAddress(ctx context.Context) string {
+	return sdk.GetEnvServerCenterAddress(ctx)
+}
+func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
+	return sdk.GetEnvServerCenterSecret(ctx)
+}
+func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
+	return 5 * time.Second
+}
 func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
 	fmt.Printf("解析配置: \n%+v\n", object.ConfText)
 	return nil
@@ -26,7 +37,6 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 
 func TestGetAndParseLastServerConf(test *testing.T) {
 	ctx := util.CreateLogCtx()
-	util.InitLog("server_center.log")
 	client, err := sdk.NewDefaultServerCenterClient(&ServerCenterHandler{})
 	if err != nil {
 		test.Error(err)
@@ -40,15 +50,14 @@ func TestGetAndParseLastServerConf(test *testing.T) {
 	}
 }
 
-func TestStart(test *testing.T) {
+func TestStartConfWithInitConf(test *testing.T) {
 	ctx := util.CreateLogCtx()
-	util.InitLog("server_center.log")
 	client, err := sdk.NewDefaultServerCenterClient(&ServerCenterHandler{})
 	if err != nil {
 		test.Error(err)
 		test.FailNow()
 	}
-	response, err := client.Start(ctx)
+	response, err := client.StartConfWithInitConf(ctx)
 	test.Logf("response: %+v\r\n", util.ToJsonIndentString(response))
 	if err != nil {
 		test.Error(err)

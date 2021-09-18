@@ -10,10 +10,10 @@ const (
 )
 
 type Config struct {
-	LogLevel logrus.Level `ini:"log_level" json:"log_level"`
-	MysqlDsn string       `ini:"mysql_dsn" json:"-"`
-	ShowSql  bool         `ini:"show_sql" json:"show_sql"`
-	Secret   string       `ini:"secret" json:"-"`
+	LogLevel logrus.Level `yaml:"log_level" json:"log_level"`
+	MysqlDsn string       `yaml:"mysql_dsn" json:"-"`
+	ShowSql  bool         `yaml:"show_sql" json:"show_sql"`
+	Secret   string       `yaml:"secret" json:"-"`
 }
 
 func (this Config) String() string {

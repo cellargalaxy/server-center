@@ -8,16 +8,17 @@ import (
 )
 
 func init() {
+	ctx := util.CreateLogCtx()
 	logrus.SetLevel(config.Config.LogLevel)
 	util.InitLog(util.GetServerNameWithPanic())
+	config.Init(ctx)
 }
 
 /**
 export server_name=server_center
-export log_level=4
 export mysql_dsn=root:123456@tcp(127.0.0.1:3306)/server_center?charset=utf8mb4&parseTime=True&loc=Local&tls=preferred
-export show_sql=false
-export secret=secret
+
+server_name=server_center;mysql_dsn=root:123456@tcp(127.0.0.1:3306)/server_center?charset=utf8mb4&parseTime=True&loc=Local&tls=preferred
 */
 func main() {
 	err := controller.Controller()

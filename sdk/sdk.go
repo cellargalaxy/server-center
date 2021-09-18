@@ -3,7 +3,6 @@ package sdk
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"github.com/cellargalaxy/go_common/consd"
 	common_model "github.com/cellargalaxy/go_common/model"
@@ -15,36 +14,43 @@ import (
 	"time"
 )
 
+const (
+	serverCenterAddressEnvKey = "server_center_address"
+	serverCenterSecretEnvKey  = "server_center_secret"
+)
+
+func GetEnvServerCenterAddress(ctx context.Context) string {
+	return util.GetEnvString(serverCenterAddressEnvKey, "")
+}
+func GetEnvServerCenterSecret(ctx context.Context) string {
+	return util.GetEnvString(serverCenterSecretEnvKey, "")
+}
+
 type ServerCenterHandlerInter interface {
+	GetAddress(ctx context.Context) string
+	GetSecret(ctx context.Context) string
+	GetInterval(ctx context.Context) time.Duration
 	ParseConf(ctx context.Context, object model.ServerConfModel) error
 }
 
 type ServerCenterClient struct {
-	address    string
-	secret     string
 	retry      int
-	interval   time.Duration
 	httpClient *resty.Client
-	conf       model.ServerConfModel
 	handler    ServerCenterHandlerInter
+	conf       model.ServerConfModel
 	running    bool
 }
 
 func NewDefaultServerCenterClient(handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
-	address := util.GetEnvString("server_center_address", "")
-	secret := util.GetEnvString("server_center_secret", "")
-	return NewServerCenterClient(3*time.Second, 3*time.Second, 3, address, secret, 5*time.Minute, handler)
+	return NewServerCenterClient(3*time.Second, 3*time.Second, 3, handler)
 }
 
-func NewServerCenterClient(timeout, sleep time.Duration, retry int, address, secret string, interval time.Duration, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
-	if address == "" {
-		return nil, fmt.Errorf("address为空")
-	}
-	if secret == "" {
-		return nil, fmt.Errorf("secret为空")
+func NewServerCenterClient(timeout, sleep time.Duration, retry int, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
+	if handler == nil {
+		return nil, fmt.Errorf("handler为空")
 	}
 	httpClient := createHttpClient(timeout, sleep, retry)
-	return &ServerCenterClient{address: address, secret: secret, retry: retry, interval: interval, httpClient: httpClient, handler: handler}, nil
+	return &ServerCenterClient{retry: retry, httpClient: httpClient, handler: handler}, nil
 }
 
 func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
@@ -62,11 +68,11 @@ func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
 			if response != nil {
 				statusCode = response.StatusCode()
 			}
-			retry := statusCode != http.StatusOK || err != nil
-			if retry {
+			isRetry := statusCode != http.StatusOK || err != nil
+			if isRetry {
 				logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "err": err}).Warn("HTTP请求异常，进行重试")
 			}
-			return retry
+			return isRetry
 		}).
 		SetRetryAfter(func(client *resty.Client, response *resty.Response) (time.Duration, error) {
 			ctx := util.CreateLogCtx()
@@ -92,13 +98,9 @@ func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
 	return httpClient
 }
 
-func (this *ServerCenterClient) Start(ctx context.Context) (*model.ServerConfModel, error) {
+func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) (*model.ServerConfModel, error) {
 	if this.running {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("ServerCenterClient开始，已开始")
-		return nil, nil
-	}
-	if this.handler == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("ServerCenterClient开始，ServerCenterHandlerInter为空")
 		return nil, nil
 	}
 	object, err := this.GetAndParseLastServerConf(ctx)
@@ -106,29 +108,38 @@ func (this *ServerCenterClient) Start(ctx context.Context) (*model.ServerConfMod
 		return nil, err
 	}
 	this.running = true
-	go this.start()
+	go this.startConf()
 	return object, nil
 }
 
-func (this *ServerCenterClient) start() {
+func (this *ServerCenterClient) StartConf(ctx context.Context) {
+	if this.running {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("ServerCenterClient开始，已开始")
+		return
+	}
+	this.running = true
+	go this.startConf()
+}
+
+func (this *ServerCenterClient) startConf() {
 	for true {
 		ctx := util.CreateLogCtx()
 		this.GetAndParseLastServerConf(ctx)
-		time.Sleep(util.WareDuration(this.interval))
+		time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
 	}
 }
 
 func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	if this.handler == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("查询并解析最新服务配置，ServerCenterHandlerInter为空")
-		return nil, nil
-	}
 	object, err := this.GetLastServerConf(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if object == nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"current_version": this.conf.Version}).Info("查询并解析最新服务配置，服务配置无更新")
+		return nil, nil
+	}
+	if object.Version <= this.conf.Version {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"current_version": this.conf.Version, "last_version": object.Version}).Warn("查询并解析最新服务配置，服务配置无更新")
 		return nil, nil
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"current_version": this.conf.Version, "last_version": object.Version}).Info("查询并解析最新服务配置，服务配置更新")
@@ -140,11 +151,11 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 }
 
 func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	var jsonString string
+	var jwtToken, jsonString string
 	var object *model.ServerConfModel
 	var err error
 	for i := 0; i < this.retry; i++ {
-		jwtToken, err := this.genJWT(ctx)
+		jwtToken, err = this.genJWT(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +177,7 @@ func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, j
 		Data model.GetLastServerConfResponse `json:"data"`
 	}
 	var response Response
-	err := json.Unmarshal([]byte(jsonString), &response)
+	err := util.UnmarshalJsonString(jsonString, &response)
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，解析响应异常")
 		return nil, fmt.Errorf("查询最新服务配置，解析响应异常")
@@ -180,11 +191,11 @@ func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, j
 
 func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, jwtToken string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+jwtToken).
 		SetHeader(util.LogIdKey, fmt.Sprint(util.GetLogId(ctx))).
+		SetHeader("Authorization", "Bearer "+jwtToken).
 		SetQueryParam("server_name", util.GetServerNameWithPanic()).
 		SetQueryParam("current_version", fmt.Sprint(this.conf.Version)).
-		Get(this.address + "/api/getLastServerConf")
+		Get(this.handler.GetAddress(ctx) + "/api/getLastServerConf")
 
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，请求异常")
@@ -210,6 +221,6 @@ func (this *ServerCenterClient) genJWT(ctx context.Context) (string, error) {
 	claims.IssuedAt = now.Unix()
 	claims.ExpiresAt = now.Unix() + int64(this.retry*3)
 	claims.RequestId = fmt.Sprint(util.GenId())
-	jwtToken, err := util.GenJWT(ctx, this.secret, claims)
+	jwtToken, err := util.GenJWT(ctx, this.handler.GetSecret(ctx), claims)
 	return jwtToken, err
 }

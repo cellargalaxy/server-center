@@ -3,7 +3,7 @@ module github.com/cellargalaxy/server_center
 go 1.16
 
 require (
-	github.com/cellargalaxy/go_common v0.0.0-20210917160950-edf33f0cd9a5
+	github.com/cellargalaxy/go_common v0.0.0-20210918144453-84e62259209d
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/go-resty/resty/v2 v2.6.0
