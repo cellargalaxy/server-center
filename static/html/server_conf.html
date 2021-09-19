@@ -23,7 +23,10 @@
             <b-form-select v-model="server_conf.server_name" :options="server_names"></b-form-select>
             <b-button size="sm" variant="outline-primary" @click="search">search</b-button>
             <b-button size="sm" variant="outline-warning" @click="flush">flush</b-button>
+        </b-input-group>
 
+        <b-input-group size="sm">
+            <b-form-input placeholder="server_name" v-model="server_conf.server_name"></b-form-input>
             <b-form-input type="number" placeholder="version" v-model="server_conf.version"></b-form-input>
             <b-form-input placeholder="remark" v-model="server_conf.remark"></b-form-input>
             <b-button size="sm" variant="outline-success" @click="create">create</b-button>

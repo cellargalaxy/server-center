@@ -30,10 +30,11 @@ async function addServerConf(server_name, version, remark, conf_text) {
         dealErr('server_name为空')
         return null
     }
-    if (version === undefined || version == null || version === '') {
+    if (!isNum(version)) {
         dealErr('version为空')
         return null
     }
+    version = parseInt(version)
     if (remark === undefined || remark == null || remark === '') {
         dealErr('remark为空')
         return null
