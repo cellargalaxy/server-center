@@ -56,6 +56,7 @@ func SelectLastServerConf(ctx context.Context, inquiry model.ServerConfInquiry) 
 func SelectSomeServerConf(ctx context.Context, inquiry model.ServerConfInquiry) ([]model.ServerConfModel, error) {
 	where := getDb(ctx)
 	where = serverConfWhere(where, inquiry)
+	where = where.Order("version desc")
 
 	var list []model.ServerConfModel
 	err := where.Find(&list).Error

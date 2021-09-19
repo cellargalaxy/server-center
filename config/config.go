@@ -59,7 +59,7 @@ func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
 	return Config.Secret
 }
 func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
-	return 5 * time.Second
+	return 5 * time.Minute
 }
 func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
 	var config model.Config

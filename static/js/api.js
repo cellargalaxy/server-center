@@ -12,7 +12,7 @@ async function ping() {
         url += '.json'
     }
     try {
-        let response = await instance.get(url, {
+        let response = await instance.post(url, {
             params: {},
             paramsSerializer: params => {
                 return Qs.stringify(params, {indices: false})
@@ -37,6 +37,10 @@ async function addServerConf(server_name, version, remark, conf_text) {
     if (remark === undefined || remark == null || remark === '') {
         dealErr('remark为空')
         return null
+    }
+
+    if (!window.confirm("确定创建？")) {
+        return
     }
 
     let url = '../../api/addServerConf'
@@ -86,23 +90,20 @@ async function getLastServerConf(server_name, version) {
 }
 
 async function getLastServerConfVersion(server_name) {
-    let conf = getLastServerConf(server_name, 0)
-    if (conf === undefined || conf == null) {
+    let promise = getLastServerConf(server_name, 0)
+    let data = await promise
+    if (data == null) {
         return 0
     }
-    if (!isNaN(conf.version)) {
+    if (!isNum(data.conf.version)) {
         return 0
     }
-    return conf.version
+    return data.conf.version
 }
 
 async function listServerConf(server_name, version) {
     if (server_name === undefined || server_name == null || server_name === '') {
         dealErr('server_name为空')
-        return null
-    }
-    if (version === undefined || version == null || version === '') {
-        dealErr('version为空')
         return null
     }
 
@@ -146,7 +147,7 @@ async function listAllServerName() {
 function dealResponse(response) {
     let result = response.data
     if (result.code !== 1) {
-        dealErr(result.message)
+        dealErr(result.msg)
         return null
     }
     return result.data
