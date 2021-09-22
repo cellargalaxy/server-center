@@ -58,6 +58,9 @@ func (this *ServerCenterHandler) GetAddress(ctx context.Context) string {
 func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
 	return Config.Secret
 }
+func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
+	return sdk.GetEnvServerName(ctx)
+}
 func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
 	return 5 * time.Minute
 }

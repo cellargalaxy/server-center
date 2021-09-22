@@ -25,8 +25,12 @@ func GetEnvServerCenterAddress(ctx context.Context) string {
 func GetEnvServerCenterSecret(ctx context.Context) string {
 	return util.GetEnvString(serverCenterSecretEnvKey, "")
 }
+func GetEnvServerName(ctx context.Context) string {
+	return util.GetServerNameWithPanic()
+}
 
 type ServerCenterHandlerInter interface {
+	GetServerName(ctx context.Context) string
 	GetAddress(ctx context.Context) string
 	GetSecret(ctx context.Context) string
 	GetInterval(ctx context.Context) time.Duration
@@ -35,8 +39,8 @@ type ServerCenterHandlerInter interface {
 
 type ServerCenterClient struct {
 	retry      int
-	httpClient *resty.Client
 	handler    ServerCenterHandlerInter
+	httpClient *resty.Client
 	conf       model.ServerConfModel
 	running    bool
 }
@@ -50,7 +54,7 @@ func NewServerCenterClient(timeout, sleep time.Duration, retry int, handler Serv
 		return nil, fmt.Errorf("handler为空")
 	}
 	httpClient := createHttpClient(timeout, sleep, retry)
-	return &ServerCenterClient{retry: retry, httpClient: httpClient, handler: handler}, nil
+	return &ServerCenterClient{retry: retry, handler: handler, httpClient: httpClient}, nil
 }
 
 func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
@@ -193,7 +197,7 @@ func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, jw
 	response, err := this.httpClient.R().SetContext(ctx).
 		SetHeader(util.LogIdKey, fmt.Sprint(util.GetLogId(ctx))).
 		SetHeader("Authorization", "Bearer "+jwtToken).
-		SetQueryParam("server_name", util.GetServerNameWithPanic()).
+		SetQueryParam("server_name", this.handler.GetServerName(ctx)).
 		SetQueryParam("current_version", fmt.Sprint(this.conf.Version)).
 		Get(this.handler.GetAddress(ctx) + "/api/getLastServerConf")
 
@@ -221,6 +225,7 @@ func (this *ServerCenterClient) genJWT(ctx context.Context) (string, error) {
 	claims.IssuedAt = now.Unix()
 	claims.ExpiresAt = now.Unix() + int64(this.retry*3)
 	claims.RequestId = fmt.Sprint(util.GenId())
+	claims.Caller = this.handler.GetServerName(ctx)
 	jwtToken, err := util.GenJWT(ctx, this.handler.GetSecret(ctx), claims)
 	return jwtToken, err
 }
