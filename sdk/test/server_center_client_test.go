@@ -40,7 +40,7 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 
 func TestGetAndParseLastServerConf(test *testing.T) {
 	ctx := util.CreateLogCtx()
-	client, err := sdk.NewDefaultServerCenterClient(&ServerCenterHandler{})
+	client, err := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})
 	if err != nil {
 		test.Error(err)
 		test.FailNow()
@@ -55,7 +55,7 @@ func TestGetAndParseLastServerConf(test *testing.T) {
 
 func TestStartConfWithInitConf(test *testing.T) {
 	ctx := util.CreateLogCtx()
-	client, err := sdk.NewDefaultServerCenterClient(&ServerCenterHandler{})
+	client, err := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})
 	if err != nil {
 		test.Error(err)
 		test.FailNow()
