@@ -27,7 +27,7 @@ func init() {
 }
 
 func Init(ctx context.Context) {
-	client, _ := sdk.NewDefaultServerCenterClient(&ServerCenterHandler{})
+	client, _ := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})
 	if client == nil {
 		return
 	}
