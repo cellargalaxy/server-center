@@ -7,7 +7,7 @@
     <link type="text/css" rel="stylesheet" href="../css/bootstrap-vue.min.css"/>
 </head>
 <body>
-<div id="vue">
+<b-container fluid>
     <div id="login">
         <b-input-group size="sm">
             <b-form-input type="password" placeholder="secret" v-model="secret"></b-form-input>
@@ -37,20 +37,34 @@
 
         <br/>
 
+        <b-row>
+            <b-col cols="6">
+                <b-form-textarea placeholder="plain_base64_text" :rows="base64_text_rows"
+                                 v-model="plain_base64_text" @input="enBase64"></b-form-textarea>
+            </b-col>
+            <b-col cols="6">
+                <b-form-textarea placeholder="base64_text" :rows="base64_text_rows"
+                                 v-model="base64_text" @input="deBase64"></b-form-textarea>
+            </b-col>
+        </b-row>
+
+        <br/>
+
         <b-input-group size="sm">
-            <b-form-input type="password" placeholder="secret" v-model="secret"></b-form-input>
-            <b-button size="sm" variant="outline-primary" @click="decrypt">decrypt↑</b-button>
-            <b-button size="sm" variant="outline-success" @click="encrypt">encrypt↓</b-button>
+            <b-form-input type="password" placeholder="conf_text_secret" v-model="conf_text_secret"></b-form-input>
+            <b-button size="sm" variant="outline-primary" @click="enAESCBC">decrypt🔼</b-button>
+            <b-button size="sm" variant="outline-success" @click="deAESCBC">encrypt🔽</b-button>
         </b-input-group>
 
-        <b-form-textarea placeholder="plaintext" :rows="plaintext_rows" v-model="plaintext"></b-form-textarea>
+        <b-form-textarea placeholder="plain_conf_text" :rows="plain_conf_text_rows"
+                         v-model="plain_conf_text"></b-form-textarea>
 
         <br/>
 
         <b-table :fields="server_conf_fields" :items="server_confs" @row-selected="onRowSelected" select-mode="single"
                  foot-clone hover responsive small striped selectable></b-table>
     </div>
-</div>
+</b-container>
 </body>
 <script src="../js/vue.min.js"></script>
 <script src="../js/bootstrap-vue.min.js"></script>
@@ -98,8 +112,10 @@
         data: {
             server_names: [],
             server_conf: {server_name: '', version: '', remark: '', conf_text: ''},
-            secret: '',
-            plaintext: '',
+            plain_base64_text: '',
+            base64_text: '',
+            conf_text_secret: '',
+            plain_conf_text: '',
             server_conf_fields: [
                 {key: 'id', label: 'id', sortable: true,},
                 {key: 'server_name', label: 'server_name',},
@@ -113,9 +129,14 @@
             conf_text_rows() {
                 return this.server_conf.conf_text.split("\n").length
             },
-            plaintext_rows() {
-                return this.plaintext.split("\n").length
-            }
+            plain_conf_text_rows() {
+                return this.plain_conf_text.split("\n").length
+            },
+            base64_text_rows() {
+                const rows1 = this.plain_base64_text.split("\n").length
+                const rows2 = this.base64_text.split("\n").length
+                return Math.max(rows1, rows2)
+            },
         },
         methods: {
             async listAllServerName() {
@@ -169,29 +190,35 @@
                 } else {
                     this.server_conf.conf_text = ''
                 }
-                this.plaintext = ''
+                this.plain_conf_text = ''
             },
             async flush() {
                 this.listAllServerName()
                 this.getLastServerConfVersion()
-                this.secret = ''
-                this.plaintext = ''
+                this.conf_text_secret = ''
+                this.plain_conf_text = ''
             },
-            decrypt() {
+            enAESCBC() {
                 //加密明文
-                if (this.secret === undefined || this.secret == null || this.secret === '') {
-                    alert('secret为空')
+                if (this.conf_text_secret === undefined || this.conf_text_secret == null || this.conf_text_secret === '') {
+                    alert('conf_text_secret为空')
                     return
                 }
-                this.server_conf.conf_text = enAESCBC(this.plaintext, this.secret)
+                this.server_conf.conf_text = enAESCBC(this.plain_conf_text, this.conf_text_secret)
             },
-            encrypt() {
+            deAESCBC() {
                 //解密密文
-                if (this.secret === undefined || this.secret == null || this.secret === '') {
-                    alert('secret为空')
+                if (this.conf_text_secret === undefined || this.conf_text_secret == null || this.conf_text_secret === '') {
+                    alert('conf_text_secret为空')
                     return
                 }
-                this.plaintext = deAESCBC(this.server_conf.conf_text, this.secret)
+                this.plain_conf_text = deAESCBC(this.server_conf.conf_text, this.conf_text_secret)
+            },
+            enBase64() {
+                this.base64_text = enBase64(this.plain_base64_text)
+            },
+            deBase64() {
+                this.plain_base64_text = deBase64(this.base64_text)
             },
         },
     })

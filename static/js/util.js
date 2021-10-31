@@ -24,6 +24,17 @@ function enMd5Hex(text) {
     return hash.toString(CryptoJS.enc.Hex)
 }
 
+function enBase64(text) {
+    const data = CryptoJS.enc.Utf8.parse(text)
+    const base64 = CryptoJS.enc.Base64.stringify(data)
+    return base64
+}
+
+function deBase64(base64) {
+    let data = CryptoJS.enc.Base64.parse(base64)
+    let text = data.toString(CryptoJS.enc.Utf8)
+    return text
+}
 
 /**
  * AES CBC加密
