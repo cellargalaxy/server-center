@@ -1,10 +1,63 @@
-function enSha256Hex(text) {
+function enSha256(text) {
     if (text === undefined || text == null) {
         text = ''
     }
-    const hash = sha256.create()
-    hash.update(text)
-    return hash.hex()
+    const hash = CryptoJS.SHA256(text)
+    return hash
+}
+
+function enSha256Hex(text) {
+    const hash = enSha256(text)
+    return hash.toString(CryptoJS.enc.Hex)
+}
+
+function enMd5(text) {
+    if (text === undefined || text == null) {
+        text = ''
+    }
+    const hash = CryptoJS.MD5(text)
+    return hash
+}
+
+function enMd5Hex(text) {
+    const hash = enMd5(text)
+    return hash.toString(CryptoJS.enc.Hex)
+}
+
+
+/**
+ * AES CBC加密
+ * @param secret
+ * @param text
+ * @returns {string}
+ */
+function enAESCBC(text, secret) {
+    const data = CryptoJS.enc.Utf8.parse(text)
+    const key = enSha256Hex(secret)
+    const iv = enMd5(secret)
+    const encrypt = CryptoJS.AES.encrypt(data, key, {
+        iv: iv,
+        padding: CryptoJS.pad.Pkcs7,
+        mode: CryptoJS.mode.CBC,
+    })
+    return encrypt.toString()
+}
+
+/**
+ * AES CBC解密
+ * @param word
+ * @returns {string}
+ * @constructor
+ */
+function deAESCBC(text, secret) {
+    const key = enSha256Hex(secret)
+    const iv = enMd5(secret)
+    const decrypt = CryptoJS.AES.decrypt(text, key, {
+        iv: iv,
+        padding: CryptoJS.pad.Pkcs7,
+        mode: CryptoJS.mode.CBC,
+    })
+    return decrypt.toString(CryptoJS.enc.Utf8)
 }
 
 const secretKey = 'secret'

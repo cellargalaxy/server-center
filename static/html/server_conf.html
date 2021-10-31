@@ -32,7 +32,18 @@
             <b-button size="sm" variant="outline-success" @click="create">create</b-button>
         </b-input-group>
 
-        <b-form-textarea placeholder="conf_text" :rows="rows" v-model="server_conf.conf_text"></b-form-textarea>
+        <b-form-textarea placeholder="conf_text" :rows="conf_text_rows"
+                         v-model="server_conf.conf_text"></b-form-textarea>
+
+        <br/>
+
+        <b-input-group size="sm">
+            <b-form-input type="password" placeholder="secret" v-model="secret"></b-form-input>
+            <b-button size="sm" variant="outline-primary" @click="decrypt">decrypt↑</b-button>
+            <b-button size="sm" variant="outline-success" @click="encrypt">encrypt↓</b-button>
+        </b-input-group>
+
+        <b-form-textarea placeholder="plaintext" :rows="plaintext_rows" v-model="plaintext"></b-form-textarea>
 
         <br/>
 
@@ -44,12 +55,19 @@
 <script src="../js/vue.min.js"></script>
 <script src="../js/bootstrap-vue.min.js"></script>
 <script src="../js/bootstrap-vue-icons.min.js"></script>
-<script src="../js/sha256.min.js"></script>
-<script src="../js/jsrsasign-latest-all-min.js"></script>
 <script src="../js/qs.min.js"></script>
 <script src="../js/axios.min.js"></script>
+
+<!-- 关于crypto-js的导入与使用：https://www.jianshu.com/p/90540249747d，https://github.com/kjur/jsrsasign/issues/232，https://stackoverflow.com/questions/57416217/cryptojs-encrypt-in-aes-256-cbc-returns-an-unexpected-value -->
+<script src="../js/core.min.js"></script>
+<script src="../js/enc-base64.min.js"></script>
+<script src="../js/md5.min.js"></script>
+<script src="../js/evpkdf.min.js"></script>
+<script src="../js/jsrsasign-all-min.min.js"></script>
+
 <script src="../js/util.js"></script>
 <script src="../js/api.js"></script>
+
 <script>
     let login_vue = new Vue({
         el: '#login',
@@ -80,6 +98,8 @@
         data: {
             server_names: [],
             server_conf: {server_name: '', version: '', remark: '', conf_text: ''},
+            secret: '',
+            plaintext: '',
             server_conf_fields: [
                 {key: 'id', label: 'id', sortable: true,},
                 {key: 'server_name', label: 'server_name',},
@@ -90,8 +110,11 @@
             server_confs: [],
         },
         computed: {
-            rows() {
+            conf_text_rows() {
                 return this.server_conf.conf_text.split("\n").length
+            },
+            plaintext_rows() {
+                return this.plaintext.split("\n").length
             }
         },
         methods: {
@@ -146,10 +169,29 @@
                 } else {
                     this.server_conf.conf_text = ''
                 }
+                this.plaintext = ''
             },
             async flush() {
                 this.listAllServerName()
                 this.getLastServerConfVersion()
+                this.secret = ''
+                this.plaintext = ''
+            },
+            decrypt() {
+                //加密明文
+                if (this.secret === undefined || this.secret == null || this.secret === '') {
+                    alert('secret为空')
+                    return
+                }
+                this.server_conf.conf_text = enAESCBC(this.plaintext, this.secret)
+            },
+            encrypt() {
+                //解密密文
+                if (this.secret === undefined || this.secret == null || this.secret === '') {
+                    alert('secret为空')
+                    return
+                }
+                this.plaintext = deAESCBC(this.server_conf.conf_text, this.secret)
             },
         },
     })
@@ -158,10 +200,11 @@
         let promise = login_vue.logined()
         let data = await promise
         if (!data) {
-           return
+            return
         }
         server_conf_table_vue.flush()
     }
+
     init()
 </script>
 </html>
