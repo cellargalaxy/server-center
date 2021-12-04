@@ -16,7 +16,7 @@ func init() {
 
 /**
 export server_name=server_center
-export mysql_dsn=root:123456@tcp(127.0.0.1:3306)/server_center?charset=utf8mb4&parseTime=True&loc=Local&tls=preferred
+export mysql_dsn=root:123456@tcp(172.17.0.2:3306)/server_center?charset=utf8mb4&parseTime=True&loc=Local&tls=preferred
 
 server_name=server_center;mysql_dsn=root:123456@tcp(127.0.0.1:3306)/server_center?charset=utf8mb4&parseTime=True&loc=Local&tls=preferred
 */
