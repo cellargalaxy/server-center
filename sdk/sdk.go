@@ -121,7 +121,7 @@ func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) (*mod
 		return nil, err
 	}
 	this.running = true
-	go this.startConf()
+	this.startConfAsync()
 	return object, nil
 }
 
@@ -131,15 +131,23 @@ func (this *ServerCenterClient) StartConf(ctx context.Context) {
 		return
 	}
 	this.running = true
-	go this.startConf()
+	this.startConfAsync()
 }
 
-func (this *ServerCenterClient) startConf() {
-	for true {
-		ctx := util.CreateLogCtx()
-		this.GetAndParseLastServerConf(ctx)
-		time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
-	}
+func (this *ServerCenterClient) startConfAsync() {
+	go func() {
+		defer util.Defer(func(ctx context.Context, err interface{}, stack string) {
+			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startConfAsync，结束")
+			time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
+			this.startConfAsync()
+		})
+
+		for true {
+			ctx := util.CreateLogCtx()
+			this.GetAndParseLastServerConf(ctx)
+			time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
+		}
+	}()
 }
 
 func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
