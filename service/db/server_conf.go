@@ -33,6 +33,10 @@ func AddServerConf(ctx context.Context, object model.ServerConf) (model.ServerCo
 	return conf, err
 }
 
+func RemoveServerConf(ctx context.Context, inquiry model.ServerConfInquiry) (model.ServerConfModel, error) {
+	return db.DeleteServerConf(ctx, inquiry)
+}
+
 func GetLastServerConf(ctx context.Context, inquiry model.ServerConfInquiry) (*model.ServerConfModel, error) {
 	object, err := db.SelectLastServerConf(ctx, inquiry)
 	return object, err

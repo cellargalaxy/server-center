@@ -18,6 +18,41 @@ func InsertServerConf(ctx context.Context, object model.ServerConfModel) (model.
 	return object, nil
 }
 
+func DeleteServerConf(ctx context.Context, inquiry model.ServerConfInquiry) (model.ServerConfModel, error) {
+	var where *gorm.DB
+	if inquiry.Id > 0 {
+		if where == nil {
+			where = getDb(ctx)
+		}
+		where = where.Where("id = ?", inquiry.Id)
+	}
+	if inquiry.ServerName != "" {
+		if where == nil {
+			where = getDb(ctx)
+		}
+		where = where.Where("server_name = ?", inquiry.ServerName)
+	}
+	if inquiry.Version > 0 {
+		if where == nil {
+			where = getDb(ctx)
+		}
+		where = where.Where("version = ?", inquiry.Version)
+	}
+
+	if where == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"inquiry": inquiry}).Warn("删除服务配，删除条件为空")
+		return inquiry.ServerConfModel, fmt.Errorf("删除服务配，删除条件为空")
+	}
+
+	err := where.Delete(&inquiry.ServerConfModel).Error
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Warn("删除服务配，异常")
+		return inquiry.ServerConfModel, fmt.Errorf("删除服务配，异常: %+v", err)
+	}
+	logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("删除服务配，完成")
+	return inquiry.ServerConfModel, nil
+}
+
 func serverConfWhere(where *gorm.DB, inquiry model.ServerConfInquiry) *gorm.DB {
 	if inquiry.Id > 0 {
 		where = where.Where("id = ?", inquiry.Id)
