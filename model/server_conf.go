@@ -51,6 +51,22 @@ func (this AddServerConfResponse) String() string {
 	return util.ToJsonString(this)
 }
 
+type RemoveServerConfRequest struct {
+	ServerConfInquiry
+}
+
+func (this RemoveServerConfRequest) String() string {
+	return util.ToJsonString(this)
+}
+
+type RemoveServerConfResponse struct {
+	Conf *ServerConfModel `json:"conf"`
+}
+
+func (this RemoveServerConfResponse) String() string {
+	return util.ToJsonString(this)
+}
+
 type GetLastServerConfRequest struct {
 	ServerConfInquiry
 }
