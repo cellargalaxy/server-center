@@ -21,6 +21,7 @@ func Controller() error {
 	engine.StaticFS("/static", http.FS(static.StaticFile))
 
 	engine.POST("/api/addServerConf", validate, addServerConf)
+	engine.POST("/api/removeServerConf", validate, removeServerConf)
 	engine.GET("/api/getLastServerConf", validate, getLastServerConf)
 	engine.GET("/api/listServerConf", validate, listServerConf)
 	engine.GET("/api/listAllServerName", validate, listAllServerName)

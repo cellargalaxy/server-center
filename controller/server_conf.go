@@ -21,6 +21,18 @@ func addServerConf(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, util.CreateResponse(controller.AddServerConf(ctx, request)))
 }
 
+func removeServerConf(ctx *gin.Context) {
+	var request model.RemoveServerConfRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request, "err": err}).Error("删除服务配置，请求参数解析异常")
+		ctx.JSON(http.StatusOK, util.CreateErrResponse(err.Error()))
+		return
+	}
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request}).Info("删除服务配置")
+	ctx.JSON(http.StatusOK, util.CreateResponse(controller.RemoveServerConf(ctx, request)))
+}
+
 func getLastServerConf(ctx *gin.Context) {
 	var request model.GetLastServerConfRequest
 	err := ctx.BindQuery(&request)

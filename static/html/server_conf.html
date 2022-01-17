@@ -23,6 +23,7 @@
             <b-form-select v-model="server_conf.server_name" :options="server_names"></b-form-select>
             <b-button size="sm" variant="outline-primary" @click="search">search</b-button>
             <b-button size="sm" variant="outline-warning" @click="flush">flush</b-button>
+            <b-button size="sm" variant="outline-danger" @click="remove">remove</b-button>
         </b-input-group>
 
         <b-input-group size="sm">
@@ -170,6 +171,11 @@
                     this.server_confs[i].created_at = formatTimestamp(Date.parse(this.server_confs[i].created_at), 'YYYY-MM-DD HH:mm:ss')
                     this.server_confs[i].updated_at = formatTimestamp(Date.parse(this.server_confs[i].updated_at), 'YYYY-MM-DD HH:mm:ss')
                 }
+                this.flush()
+            },
+            async remove() {
+                let promise = removeServerConf(this.server_conf.server_name)
+                await promise
                 this.flush()
             },
             async create() {

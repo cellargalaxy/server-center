@@ -11,12 +11,9 @@ func AddServerConf(ctx context.Context, request model.AddServerConfRequest) (*mo
 	return &model.AddServerConfResponse{Conf: &object}, err
 }
 
-func RemoveServerConf(ctx context.Context, request model.GetLastServerConfRequest) (*model.GetLastServerConfResponse, error) {
+func RemoveServerConf(ctx context.Context, request model.RemoveServerConfRequest) (model.RemoveServerConfResponse, error) {
 	object, err := db.RemoveServerConf(ctx, request.ServerConfInquiry)
-	if object == nil {
-		return nil, nil
-	}
-	return &model.GetLastServerConfResponse{Conf: object}, err
+	return model.RemoveServerConfResponse{Conf: object}, err
 }
 
 func GetLastServerConf(ctx context.Context, request model.GetLastServerConfRequest) (*model.GetLastServerConfResponse, error) {

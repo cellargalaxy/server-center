@@ -60,7 +60,7 @@ func (this RemoveServerConfRequest) String() string {
 }
 
 type RemoveServerConfResponse struct {
-	Conf *ServerConfModel `json:"conf"`
+	Conf ServerConfModel `json:"conf"`
 }
 
 func (this RemoveServerConfResponse) String() string {

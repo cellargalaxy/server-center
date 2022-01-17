@@ -62,6 +62,37 @@ async function addServerConf(server_name, version, remark, conf_text) {
     return null
 }
 
+async function removeServerConf(server_name) {
+    if (server_name === undefined || server_name == null || server_name === '') {
+        dealErr('server_name为空')
+        return null
+    }
+
+    if (!window.confirm("确定删除【3】？")) {
+        return
+    }
+    if (!window.confirm("确定删除【2】？")) {
+        return
+    }
+    if (!window.confirm("确定删除【1】？")) {
+        return
+    }
+
+    let url = '../../api/removeServerConf'
+    if (document.domain === 'localhost') {
+        url += '.json'
+    }
+    try {
+        let response = await instance.post(url, {
+            server_name: server_name,
+        })
+        return dealResponse(response)
+    } catch (error) {
+        dealErr(error)
+    }
+    return null
+}
+
 async function getLastServerConf(server_name, version) {
     if (server_name === undefined || server_name == null || server_name === '') {
         dealErr('server_name为空')
