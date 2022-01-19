@@ -176,6 +176,7 @@
             async remove() {
                 let promise = removeServerConf(this.server_conf.server_name)
                 await promise
+                alert('删除完成')
                 this.flush()
             },
             async create() {

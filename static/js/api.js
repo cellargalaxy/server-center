@@ -68,13 +68,13 @@ async function removeServerConf(server_name) {
         return null
     }
 
-    if (!window.confirm("确定删除【3】？")) {
+    if (!window.confirm("确定删除【" + server_name + "】(3) ？")) {
         return
     }
-    if (!window.confirm("确定删除【2】？")) {
+    if (!window.confirm("确定删除【" + server_name + "】(2) ？")) {
         return
     }
-    if (!window.confirm("确定删除【1】？")) {
+    if (!window.confirm("确定删除【" + server_name + "】(1) ？")) {
         return
     }
 
