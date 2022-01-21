@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>server_conf</title>
-    <link type="text/css" rel="stylesheet" href="../css/bootstrap.min.css"/>
-    <link type="text/css" rel="stylesheet" href="../css/bootstrap-vue.min.css"/>
+    <link type="text/css" rel="stylesheet" href="../css/bootstrap/bootstrap.min.css"/>
+    <link type="text/css" rel="stylesheet" href="../css/bootstrap/bootstrap-vue.min.css"/>
 
-
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/codemirror.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/addon/merge/merge.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/theme/monokai.min.css" rel="stylesheet">
+    <link href="../css/codemirror/codemirror.min.css" rel="stylesheet">
+    <link href="../css/codemirror/merge.min.css" rel="stylesheet">
+    <link href="../css/codemirror/monokai.min.css" rel="stylesheet">
 
     <style>
         .CodeMirror-merge, .CodeMirror-merge .CodeMirror {
@@ -42,10 +41,12 @@
             <b-form-input type="number" placeholder="version" v-model="server_conf.version"></b-form-input>
             <b-form-input placeholder="remark" v-model="server_conf.remark"></b-form-input>
             <b-button size="sm" variant="outline-success" @click="create">create</b-button>
+            <b-form-input placeholder="remark" v-model="cm_merge_option.mode"></b-form-input>
+            <b-form-select v-model="cm_merge_option.mode" :options="modes"></b-form-select>
         </b-input-group>
 
         <div class="cm-container">
-            <codemirror :merge="true" :options="cm_merge_option"></codemirror>
+            <codemirror :merge="true" :options="cm_merge_option" @input="cmInput"></codemirror>
         </div>
 
         <br/>
@@ -80,28 +81,30 @@
 
 </b-container>
 </body>
-<script src="../js/vue.min.js"></script>
-<script src="../js/bootstrap-vue.min.js"></script>
-<script src="../js/bootstrap-vue-icons.min.js"></script>
-<script src="../js/qs.min.js"></script>
-<script src="../js/axios.min.js"></script>
+<script src="../js/common/vue.min.js"></script>
+<script src="../js/common/qs.min.js"></script>
+<script src="../js/common/axios.min.js"></script>
+<script src="../js/bootstrap/bootstrap-vue.min.js"></script>
+<script src="../js/bootstrap/bootstrap-vue-icons.min.js"></script>
 
 <!-- 关于crypto-js的导入与使用：https://www.jianshu.com/p/90540249747d，https://github.com/kjur/jsrsasign/issues/232，https://stackoverflow.com/questions/57416217/cryptojs-encrypt-in-aes-256-cbc-returns-an-unexpected-value -->
-<script src="../js/core.min.js"></script>
-<script src="../js/enc-base64.min.js"></script>
-<script src="../js/md5.min.js"></script>
-<script src="../js/evpkdf.min.js"></script>
-<script src="../js/jsrsasign-all-min.min.js"></script>
+<script src="../js/crypto/core.min.js"></script>
+<script src="../js/crypto/enc-base64.min.js"></script>
+<script src="../js/crypto/md5.min.js"></script>
+<script src="../js/crypto/evpkdf.min.js"></script>
+<script src="../js/crypto/jsrsasign-all-min.min.js"></script>
+
+<script src="../js/codemirror/codemirror.min.js"></script>
+<script src="../js/codemirror/vue-codemirror.js"></script>
+<script src="../js/codemirror/javascript.min.js"></script>
+<script src="../js/codemirror/markdown.min.js"></script>
+<script src="../js/codemirror/yaml.min.js"></script>
+<script src="../js/codemirror/merge.min.js"></script>
+<script src="../js/codemirror/active-line.min.js"></script>
+<script src="../js/codemirror/diff_match_patch.js"></script>
 
 <script src="../js/util.js"></script>
 <script src="../js/api.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/codemirror.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/vue-codemirror@4.0.0/dist/vue-codemirror.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/mode/javascript/javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/addon/merge/merge.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/addon/selection/active-line.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
 
 <script>
     Vue.use(VueCodemirror)
@@ -136,87 +139,22 @@
             server_names: [],
             server_conf: {server_name: '', version: '', remark: '', conf_text: ''},
             cm_merge_option: {
-                value: 'server:\n' +
-                    '  http_listen_port: 9080\n' +
-                    '  grpc_listen_port: 0\n' +
-                    '\n' +
-                    'positions:\n' +
-                    '  filename: /tmp/positions.yaml\n' +
-                    '\n' +
-                    'clients:\n' +
-                    '  - url: http://localhost:3100/loki/api/v1/push\n' +
-                    '\n' +
-                    'scrape_configs:\n' +
-                    '- job_name: vbox-main\n' +
-                    '  static_configs:\n' +
-                    '  - targets:\n' +
-                    '    - localhost\n' +
-                    '    labels:\n' +
-                    '      job: vbox\n' +
-                    '      appender: main\n' +
-                    '      __path__: /var/log/vbox/main.log        \n' +
-                    '\n' +
-                    '  pipeline_stages:\n' +
-                    '  - json:\n' +
-                    '      expressions:\n' +
-                    '        timestamp: timestamp\n' +
-                    '        message: message\n' +
-                    '        context: context\n' +
-                    '        level: level\n' +
-                    '      timestamp:\n' +
-                    '        source: timestamp\n' +
-                    '        format: RFC3339Nano\n' +
-                    '      labels:\n' +
-                    '        context:\n' +
-                    '        level:\n' +
-                    '      output:\n' +
-                    '        source: message',
-                orig: 'server:\n' +
-                    '  http_listen_port: 9080\n' +
-                    '  grpc_listen_port: 0\n' +
-                    '\n' +
-                    'positions:\n' +
-                    '  filename: /tmp/positions.yaml\n' +
-                    '\n' +
-                    'clients:\n' +
-                    '  - url: http://localhost:3100/loki/api/v1/push\n' +
-                    '\n' +
-                    'scrape_configs:\n' +
-                    '- job_name: vbox-main\n' +
-                    '  static_configs:\n' +
-                    '  - targets:\n' +
-                    '    - localhost\n' +
-                    '    labels:\n' +
-                    '      job: vbox\n' +
-                    '      appender: main\n' +
-                    '      __path__: /var/log/vbox/main.log        \n' +
-                    '\n' +
-                    '  pipeline_stages:\n' +
-                    '  - json:\n' +
-                    '      expressions:\n' +
-                    '        timestamp: timestamp\n' +
-                    '        message: message\n' +
-                    '        context: context\n' +
-                    '        level: level\n' +
-                    '      timestamp:\n' +
-                    '        source: timestamp\n' +
-                    '        format: RFC3339Nano\n' +
-                    '      labels:\n' +
-                    '        context:\n' +
-                    '        level:\n' +
-                    '      output:\n' +
-                    '        source: message',
+                value: '',
+                orig: '',
                 connect: 'align',
-                mode: 'text/javascript',
+                mode: '',
                 lineNumbers: true,
-                allowEditingOriginals: false, //原文框是否只读
+                allowEditingOriginals: true, //原文框是否允许编辑
                 highlightDifferences: true, //线上对比
                 foldGutter: true, // 启用行槽中的代码折叠
                 autoCloseBrackets: true, // 自动闭合符号
                 styleActiveLine: true, // 显示选中行的样式
-                lineWrapping: true,
-                extraKeys: {'Ctrl-Space': 'autocomplete'},
             },
+            modes: [
+                'text/x-yaml',
+                'text/x-markdown',
+                'text/javascript',
+            ],
             plain_base64_text: '',
             base64_text: '',
             conf_text_secret: '',
@@ -231,9 +169,6 @@
             server_confs: [],
         },
         computed: {
-            conf_text_rows() {
-                return this.server_conf.conf_text.split("\n").length
-            },
             plain_conf_text_rows() {
                 return this.plain_conf_text.split("\n").length
             },
@@ -301,6 +236,8 @@
                 } else {
                     this.server_conf.conf_text = ''
                 }
+                this.cm_merge_option.value = this.server_conf.conf_text
+                this.cm_merge_option.orig = this.server_conf.conf_text
                 this.plain_conf_text = ''
             },
             async flush() {
@@ -330,6 +267,9 @@
             },
             deBase64() {
                 this.plain_base64_text = deBase64(this.base64_text)
+            },
+            cmInput(text) {
+                this.server_conf.conf_text = text
             },
         },
     })
