@@ -11,8 +11,12 @@
     <link href="../css/codemirror/monokai.min.css" rel="stylesheet">
 
     <style>
-        .CodeMirror-merge, .CodeMirror-merge .CodeMirror {
-            height: 50em;
+        .cm_merge .CodeMirror-merge, .cm_merge .CodeMirror-merge .CodeMirror {
+            height: auto;
+        }
+
+        .cmqq .CodeMirror-merge, .cmqq .CodeMirror-merge .CodeMirror {
+            height: auto;
         }
     </style>
 </head>
@@ -41,13 +45,12 @@
             <b-form-input type="number" placeholder="version" v-model="server_conf.version"></b-form-input>
             <b-form-input placeholder="remark" v-model="server_conf.remark"></b-form-input>
             <b-button size="sm" variant="outline-success" @click="create">create</b-button>
-            <b-form-input placeholder="remark" v-model="cm_merge_option.mode"></b-form-input>
+            <b-form-input placeholder="mode" v-model="cm_merge_option.mode"></b-form-input>
             <b-form-select v-model="cm_merge_option.mode" :options="modes"></b-form-select>
         </b-input-group>
 
-        <div class="cm-container">
-            <codemirror :merge="true" :options="cm_merge_option" @input="cmInput"></codemirror>
-        </div>
+        <codemirror class="cm_merge" v-model="server_conf.conf_text"
+                    :merge="true" :options="cm_merge_option"></codemirror>
 
         <br/>
 
@@ -70,8 +73,9 @@
             <b-button size="sm" variant="outline-success" @click="deAESCBC">encrypt🔽</b-button>
         </b-input-group>
 
-        <b-form-textarea placeholder="plain_conf_text" :rows="plain_conf_text_rows"
-                         v-model="plain_conf_text"></b-form-textarea>
+        <div class="cmqq">
+            <codemirror v-model="plain_conf_text" :options="cm_option"></codemirror>
+        </div>
 
         <br/>
 
@@ -145,7 +149,17 @@
                 mode: '',
                 lineNumbers: true,
                 allowEditingOriginals: true, //原文框是否允许编辑
-                highlightDifferences: true, //线上对比
+                highlightDifferences: true, //高亮对比
+                foldGutter: true, // 启用行槽中的代码折叠
+                autoCloseBrackets: true, // 自动闭合符号
+                styleActiveLine: true, // 显示选中行的样式
+            },
+            cm_option: {
+                value: '',
+                orig: '',
+                connect: 'align',
+                mode: '',
+                lineNumbers: true,
                 foldGutter: true, // 启用行槽中的代码折叠
                 autoCloseBrackets: true, // 自动闭合符号
                 styleActiveLine: true, // 显示选中行的样式
@@ -267,9 +281,6 @@
             },
             deBase64() {
                 this.plain_base64_text = deBase64(this.base64_text)
-            },
-            cmInput(text) {
-                this.server_conf.conf_text = text
             },
         },
     })
