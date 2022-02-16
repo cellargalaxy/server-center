@@ -20,11 +20,11 @@ func Controller() error {
 	engine.Use(staticCache)
 	engine.StaticFS("/static", http.FS(static.StaticFile))
 
-	engine.POST("/api/addServerConf", validate, addServerConf)
-	engine.POST("/api/removeServerConf", validate, removeServerConf)
-	engine.GET("/api/getLastServerConf", validate, getLastServerConf)
-	engine.GET("/api/listServerConf", validate, listServerConf)
-	engine.GET("/api/listAllServerName", validate, listAllServerName)
+	engine.POST(model.AddServerConfPath, validate, addServerConf)
+	engine.POST(model.RemoveServerConfPath, validate, removeServerConf)
+	engine.GET(model.GetLastServerConfPath, validate, getLastServerConf)
+	engine.GET(model.ListServerConfPath, validate, listServerConf)
+	engine.GET(model.ListAllServerNamePath, validate, listAllServerName)
 
 	err := engine.Run(model.ListenAddress)
 	if err != nil {

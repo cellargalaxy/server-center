@@ -2,3 +2,6 @@ log_level: info
 mysql_dsn:
 show_sql: false
 secret: secret_secret
+pull_sync_cron:
+pull_sync_host:
+pull_sync_secret:

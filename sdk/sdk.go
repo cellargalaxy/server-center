@@ -164,7 +164,11 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 }
 
 func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	if this.handler.GetServerName(ctx) == "" || this.handler.GetAddress(ctx) == "" || this.handler.GetSecret(ctx) == "" {
+	return this.GetLastServerConfByServerName(ctx, this.handler.GetServerName(ctx))
+}
+
+func (this *ServerCenterClient) GetLastServerConfByServerName(ctx context.Context, serverName string) (*model.ServerConfModel, error) {
+	if serverName == "" || this.handler.GetAddress(ctx) == "" || this.handler.GetSecret(ctx) == "" {
 		return this.getLocalFileServerConf(ctx)
 	}
 
@@ -176,7 +180,7 @@ func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.S
 		if err != nil {
 			return nil, err
 		}
-		jsonString, err = this.requestGetLastServerConf(ctx, jwtToken)
+		jsonString, err = this.requestGetLastServerConf(ctx, serverName, jwtToken)
 		if err == nil {
 			object, err = this.analysisGetLastServerConf(ctx, jsonString)
 			if err == nil {
@@ -217,13 +221,13 @@ func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, j
 	return response.Data.Conf, nil
 }
 
-func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, jwtToken string) (string, error) {
+func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, serverName, jwtToken string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
 		SetHeader(util.LogIdKey, fmt.Sprint(util.GetLogId(ctx))).
 		SetHeader("Authorization", "Bearer "+jwtToken).
-		SetQueryParam("server_name", this.handler.GetServerName(ctx)).
+		SetQueryParam("server_name", serverName).
 		SetQueryParam("current_version", fmt.Sprint(this.conf.Version)).
-		Get(this.handler.GetAddress(ctx) + "/api/getLastServerConf")
+		Get(this.handler.GetAddress(ctx) + model.GetLastServerConfPath)
 
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，请求异常")
@@ -239,6 +243,69 @@ func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, jw
 	if statusCode != http.StatusOK {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("查询最新服务配置，响应码失败")
 		return "", fmt.Errorf("查询最新服务配置，响应码失败: %+v", statusCode)
+	}
+	return body, nil
+}
+
+func (this *ServerCenterClient) ListAllServerName(ctx context.Context) ([]string, error) {
+	var jwtToken, jsonString string
+	var object []string
+	var err error
+	for i := 0; i < this.retry; i++ {
+		jwtToken, err = this.genJWT(ctx)
+		if err != nil {
+			return nil, err
+		}
+		jsonString, err = this.requestListAllServerName(ctx, jwtToken)
+		if err == nil {
+			object, err = this.analysisListAllServerName(ctx, jsonString)
+			if err == nil {
+				return object, err
+			}
+		}
+	}
+	return object, err
+}
+
+func (this *ServerCenterClient) analysisListAllServerName(ctx context.Context, jsonString string) ([]string, error) {
+	type Response struct {
+		Code int                             `json:"code"`
+		Msg  string                          `json:"msg"`
+		Data model.ListAllServerNameResponse `json:"data"`
+	}
+	var response Response
+	err := util.UnmarshalJsonString(jsonString, &response)
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，解析响应异常")
+		return nil, fmt.Errorf("查询服务配置列表，解析响应异常")
+	}
+	if response.Code != consd.HttpSuccessCode {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"code": response.Code, "msg": response.Msg}).Error("查询服务配置列表，失败")
+		return nil, fmt.Errorf("查询服务配置列表，失败")
+	}
+	return response.Data.List, nil
+}
+
+func (this *ServerCenterClient) requestListAllServerName(ctx context.Context, jwtToken string) (string, error) {
+	response, err := this.httpClient.R().SetContext(ctx).
+		SetHeader(util.LogIdKey, fmt.Sprint(util.GetLogId(ctx))).
+		SetHeader("Authorization", "Bearer "+jwtToken).
+		Get(this.handler.GetAddress(ctx) + model.ListAllServerNamePath)
+
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，请求异常")
+		return "", fmt.Errorf("查询服务配置列表，请求异常")
+	}
+	if response == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，响应为空")
+		return "", fmt.Errorf("查询服务配置列表，响应为空")
+	}
+	statusCode := response.StatusCode()
+	body := response.String()
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "len(body)": len(body)}).Info("查询服务配置列表，响应")
+	if statusCode != http.StatusOK {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("查询服务配置列表，响应码失败")
+		return "", fmt.Errorf("查询服务配置列表，响应码失败: %+v", statusCode)
 	}
 	return body, nil
 }

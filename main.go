@@ -4,6 +4,7 @@ import (
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/config"
 	"github.com/cellargalaxy/server_center/controller"
+	"github.com/cellargalaxy/server_center/corn"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,6 +13,7 @@ func init() {
 	logrus.SetLevel(config.Config.LogLevel)
 	util.InitDefaultLog()
 	config.Init(ctx)
+	corn.Init(ctx)
 }
 
 /**
