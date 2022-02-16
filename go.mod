@@ -3,7 +3,7 @@ module github.com/cellargalaxy/server_center
 go 1.16
 
 require (
-	github.com/cellargalaxy/go_common v0.0.0-20220116165946-f64f88733260
+	github.com/cellargalaxy/go_common v0.0.0-20220216154636-d30ecd7ed566
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/go-resty/resty/v2 v2.7.0
@@ -21,5 +21,6 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/mysql v1.2.3
+	gorm.io/driver/sqlite v1.2.6
 	gorm.io/gorm v1.22.5
 )

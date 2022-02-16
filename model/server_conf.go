@@ -3,10 +3,10 @@ package model
 import "github.com/cellargalaxy/go_common/util"
 
 type ServerConf struct {
-	ServerName string `json:"server_name" gorm:"server_name" form:"server_name" query:"server_name"`
-	Version    int    `json:"version" gorm:"version" form:"version" query:"version"`
-	Remark     string `json:"remark" gorm:"remark" form:"remark" query:"remark"`
-	ConfText   string `json:"conf_text" gorm:"conf_text" form:"conf_text" query:"conf_text"`
+	ServerName string `json:"server_name" form:"server_name" query:"server_name" gorm:"server_name;not null;default:'';uniqueIndex:uniq_name_ver"`
+	Version    int    `json:"version" form:"version" query:"version" gorm:"version;not null;default:0;uniqueIndex:uniq_name_ver"`
+	Remark     string `json:"remark" form:"remark" query:"remark" gorm:"remark;not null;default:''"`
+	ConfText   string `json:"conf_text" form:"conf_text" query:"conf_text" gorm:"conf_text;not null;default:''"`
 }
 
 func (this ServerConf) String() string {

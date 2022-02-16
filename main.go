@@ -10,7 +10,7 @@ import (
 func init() {
 	ctx := util.CreateLogCtx()
 	logrus.SetLevel(config.Config.LogLevel)
-	util.InitDefaultLog(util.GetServerNameWithPanic())
+	util.InitDefaultLog()
 	config.Init(ctx)
 }
 

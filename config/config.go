@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"fmt"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/cellargalaxy/server_center/sdk"
@@ -37,14 +36,6 @@ func Init(ctx context.Context) {
 func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config, error) {
 	if config.LogLevel <= 0 || config.LogLevel > logrus.TraceLevel {
 		config.LogLevel = logrus.InfoLevel
-	}
-	if config.MysqlDsn == "" {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("mysql_dsn为空")
-		return config, fmt.Errorf("mysql_dsn为空")
-	}
-	if config.Secret == "" {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("secret为空")
-		return config, fmt.Errorf("secret为空")
 	}
 	return config, nil
 }

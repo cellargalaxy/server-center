@@ -4,7 +4,9 @@ import (
 	"context"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/config"
+	"github.com/cellargalaxy/server_center/model"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"time"
@@ -21,7 +23,7 @@ func init() {
 	}
 
 	var err error
-	db, err = initMysql(dbConfig)
+	db, err = initDb(dbConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -36,10 +38,22 @@ func init() {
 	sqlDB.SetMaxOpenConns(1)
 	// SetConnMaxLifetime 设置了连接可复用的最大时间。
 	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	err = db.AutoMigrate(&model.ServerConfModel{})
+	if err != nil {
+		panic(err)
+	}
 }
 
-func initMysql(dbConfig *gorm.Config) (*gorm.DB, error) {
-	return gorm.Open(mysql.Open(config.Config.MysqlDsn), dbConfig)
+func initDb(dbConfig *gorm.Config) (*gorm.DB, error) {
+	if config.Config.MysqlDsn != "" {
+		return gorm.Open(mysql.Open(config.Config.MysqlDsn), dbConfig)
+	}
+	err := util.CreateFolderPath(util.CreateLogCtx(), "resource")
+	if err != nil {
+		return nil, err
+	}
+	return gorm.Open(sqlite.Open("resource/sqlite.db"), dbConfig)
 }
 
 func getDb(ctx context.Context) *gorm.DB {

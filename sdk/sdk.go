@@ -26,7 +26,7 @@ func GetEnvServerCenterSecret(ctx context.Context) string {
 	return util.GetEnvString(serverCenterSecretEnvKey, "")
 }
 func GetEnvServerName(ctx context.Context) string {
-	return util.GetServerNameWithPanic()
+	return util.GetServerName()
 }
 
 type ServerCenterHandlerInter interface {
@@ -38,18 +38,19 @@ type ServerCenterHandlerInter interface {
 }
 
 type ServerCenterClient struct {
-	retry      int
-	handler    ServerCenterHandlerInter
-	httpClient *resty.Client
-	conf       model.ServerConfModel
-	running    bool
+	retry         int
+	handler       ServerCenterHandlerInter
+	localFilePath string
+	httpClient    *resty.Client
+	conf          model.ServerConfModel
+	running       bool
 }
 
 func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
-	return NewServerCenterClient(ctx, 3*time.Second, 3*time.Second, 3, handler)
+	return NewServerCenterClient(ctx, 3*time.Second, 3*time.Second, 3, handler, "resource/config.yml")
 }
 
-func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, retry int, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
+func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, retry int, handler ServerCenterHandlerInter, localFilePath string) (*ServerCenterClient, error) {
 	if handler == nil {
 		return nil, fmt.Errorf("handler为空")
 	}
@@ -63,7 +64,7 @@ func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, re
 		return nil, fmt.Errorf("secret为空")
 	}
 	httpClient := createHttpClient(timeout, sleep, retry)
-	return &ServerCenterClient{retry: retry, handler: handler, httpClient: httpClient}, nil
+	return &ServerCenterClient{retry: retry, handler: handler, httpClient: httpClient, localFilePath: localFilePath}, nil
 }
 
 func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
@@ -172,6 +173,10 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 }
 
 func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
+	if this.handler.GetServerName(ctx) == "" || this.handler.GetAddress(ctx) == "" || this.handler.GetSecret(ctx) == "" {
+		return this.getLocalFileServerConf(ctx)
+	}
+
 	var jwtToken, jsonString string
 	var object *model.ServerConfModel
 	var err error
@@ -189,6 +194,17 @@ func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.S
 		}
 	}
 	return object, err
+}
+
+func (this *ServerCenterClient) getLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
+	confText, err := util.ReadFileWithString(ctx, this.localFilePath, "")
+	if err != nil {
+		return nil, err
+	}
+	var serverConf model.ServerConfModel
+	serverConf.Version = 1
+	serverConf.ConfText = confText
+	return &serverConf, nil
 }
 
 func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, jsonString string) (*model.ServerConfModel, error) {
