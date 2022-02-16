@@ -54,15 +54,6 @@ func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, re
 	if handler == nil {
 		return nil, fmt.Errorf("handler为空")
 	}
-	if handler.GetServerName(ctx) == "" {
-		return nil, fmt.Errorf("serverName为空")
-	}
-	if handler.GetAddress(ctx) == "" {
-		return nil, fmt.Errorf("address为空")
-	}
-	if handler.GetSecret(ctx) == "" {
-		return nil, fmt.Errorf("secret为空")
-	}
 	httpClient := createHttpClient(timeout, sleep, retry)
 	return &ServerCenterClient{retry: retry, handler: handler, httpClient: httpClient, localFilePath: localFilePath}, nil
 }
