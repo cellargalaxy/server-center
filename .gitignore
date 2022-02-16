@@ -17,4 +17,4 @@
 .idea
 server_center
 *.log
-*.ini
+*.db
