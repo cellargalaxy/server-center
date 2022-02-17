@@ -5,7 +5,7 @@ import (
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/config"
 	"github.com/cellargalaxy/server_center/model"
-	"github.com/cloudquery/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
