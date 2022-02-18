@@ -35,6 +35,7 @@ type ServerCenterHandlerInter interface {
 	GetSecret(ctx context.Context) string
 	GetInterval(ctx context.Context) time.Duration
 	ParseConf(ctx context.Context, object model.ServerConfModel) error
+	GetDefaultConf(ctx context.Context) string
 }
 
 type ServerCenterClient struct {
@@ -195,6 +196,12 @@ func (this *ServerCenterClient) getLocalFileServerConf(ctx context.Context) (*mo
 	confText, err := util.ReadFileWithString(ctx, this.localFilePath, "")
 	if err != nil {
 		return nil, err
+	}
+	if confText == "" {
+		confText = this.handler.GetDefaultConf(ctx)
+		if confText != "" {
+			util.WriteFileWithString(ctx, this.localFilePath, confText)
+		}
 	}
 	var serverConf model.ServerConfModel
 	serverConf.Version = 1
