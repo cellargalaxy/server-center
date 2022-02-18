@@ -28,6 +28,9 @@ func (this *PullSyncHandler) GetInterval(ctx context.Context) time.Duration {
 func (this *PullSyncHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
 	return nil
 }
+func (this *PullSyncHandler) GetDefaultConf(ctx context.Context) string {
+	return ""
+}
 
 func PullSync(ctx context.Context, address, secret string) error {
 	var handler PullSyncHandler

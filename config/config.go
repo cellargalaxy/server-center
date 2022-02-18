@@ -71,3 +71,6 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"Config": Config}).Info("加载配置")
 	return nil
 }
+func (this *ServerCenterHandler) GetDefaultConf(ctx context.Context) string {
+	return util.ToYamlString(Config)
+}

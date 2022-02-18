@@ -37,6 +37,9 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 	fmt.Printf("解析配置: \n%+v\n", object.ConfText)
 	return nil
 }
+func (this *ServerCenterHandler) GetDefaultConf(ctx context.Context) string {
+	return ""
+}
 
 func TestGetAndParseLastServerConf(test *testing.T) {
 	ctx := util.CreateLogCtx()
