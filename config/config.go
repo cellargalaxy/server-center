@@ -72,5 +72,7 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 	return nil
 }
 func (this *ServerCenterHandler) GetDefaultConf(ctx context.Context) string {
-	return util.ToYamlString(Config)
+	var config model.Config
+	config, _ = checkAndResetConfig(ctx, config)
+	return util.ToYamlString(config)
 }
