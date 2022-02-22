@@ -3,7 +3,7 @@ module github.com/cellargalaxy/server_center
 go 1.16
 
 require (
-	github.com/cellargalaxy/go_common v0.0.0-20220216154636-d30ecd7ed566
+	github.com/cellargalaxy/go_common v0.0.0-20220222050500-014f3159f86e
 	github.com/gin-gonic/gin v1.7.7
 	github.com/glebarez/sqlite v1.3.5
 	github.com/go-playground/validator/v10 v10.10.0 // indirect

@@ -4,6 +4,8 @@ github.com/antonfisher/nested-logrus-formatter v1.3.1 h1:NFJIr+pzwv5QLHTPyKz9UME
 github.com/antonfisher/nested-logrus-formatter v1.3.1/go.mod h1:6WTfyWFkBc9+zyBaKIqRrg/KwMqBbodBjgbHjDz7zjA=
 github.com/cellargalaxy/go_common v0.0.0-20220216154636-d30ecd7ed566 h1:OieBbASfA7EXAQqOrAPzd1am9dERUOh46Q2/pm05kuw=
 github.com/cellargalaxy/go_common v0.0.0-20220216154636-d30ecd7ed566/go.mod h1:ekw3c/eYKJSN80mZhNEIS0JByE0+U7xeM6mcNE7NCHo=
+github.com/cellargalaxy/go_common v0.0.0-20220222050500-014f3159f86e h1:CuGKYk+XdTX6broH6BUE4nlu23QOGjgp9vG8NXBAydQ=
+github.com/cellargalaxy/go_common v0.0.0-20220222050500-014f3159f86e/go.mod h1:ekw3c/eYKJSN80mZhNEIS0JByE0+U7xeM6mcNE7NCHo=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
