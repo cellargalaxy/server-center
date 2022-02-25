@@ -114,7 +114,7 @@ func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) (*mod
 		return nil, err
 	}
 	this.running = true
-	this.startConfAsync()
+	this.startConfAsync(ctx)
 	return object, nil
 }
 
@@ -124,15 +124,15 @@ func (this *ServerCenterClient) StartConf(ctx context.Context) {
 		return
 	}
 	this.running = true
-	this.startConfAsync()
+	this.startConfAsync(ctx)
 }
 
-func (this *ServerCenterClient) startConfAsync() {
+func (this *ServerCenterClient) startConfAsync(ctx context.Context) {
 	go func() {
-		defer util.Defer(func(ctx context.Context, err interface{}, stack string) {
+		defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
 			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startConfAsync，结束")
 			time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
-			this.startConfAsync()
+			this.startConfAsync(ctx)
 		})
 
 		for true {
