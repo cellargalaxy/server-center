@@ -30,7 +30,7 @@ func Init(ctx context.Context) {
 	if client == nil {
 		return
 	}
-	client.StartConfWithInitConf(ctx)
+	client.StartConf(ctx)
 }
 
 func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config, error) {

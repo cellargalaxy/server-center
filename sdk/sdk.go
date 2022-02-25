@@ -104,18 +104,20 @@ func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
 	return httpClient
 }
 
-func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) (*model.ServerConfModel, error) {
+func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
 	if this.running {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("ServerCenterClient开始，已开始")
-		return nil, nil
+		return
 	}
-	object, err := this.GetAndParseLastServerConf(ctx)
-	if err != nil {
-		return nil, err
+	for {
+		_, err := this.GetAndParseLastServerConf(ctx)
+		if err == nil {
+			break
+		}
+		time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
 	}
 	this.running = true
 	this.startConfAsync(ctx)
-	return object, nil
 }
 
 func (this *ServerCenterClient) StartConf(ctx context.Context) {
@@ -135,7 +137,7 @@ func (this *ServerCenterClient) startConfAsync(ctx context.Context) {
 			this.startConfAsync(ctx)
 		})
 
-		for true {
+		for {
 			ctx := util.CreateLogCtx()
 			this.GetAndParseLastServerConf(ctx)
 			time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
