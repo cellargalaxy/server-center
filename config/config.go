@@ -17,7 +17,7 @@ func init() {
 	Config.LogLevel = logrus.InfoLevel
 	Config.MysqlDsn = util.GetEnvString("mysql_dsn", Config.MysqlDsn)
 	Config.ShowSql = false
-	Config.Secret = "secret"
+	Config.Secret = util.GenStringId()
 	Config, err = checkAndResetConfig(ctx, Config)
 	if err != nil {
 		panic(err)
