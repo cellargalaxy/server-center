@@ -30,6 +30,8 @@ read
 
 echo 'create volume'
 docker volume create log
+echo 'create volume'
+docker volume create server_center_data
 echo 'stop container'
 docker stop $server_name
 echo 'remove container'
@@ -43,6 +45,7 @@ docker run -d \
   --restart=always \
   --name $server_name \
   -v log:/log \
+  -v server_center_data:/resource \
   -p $listen_port:7557 \
   -e server_name=$server_name \
   -e mysql_dsn=$mysql_dsn \
