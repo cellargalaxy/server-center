@@ -12,9 +12,9 @@ import (
 var Config = model.Config{}
 
 func init() {
-	var err error
 	ctx := util.CreateLogCtx()
-	Config.LogLevel = logrus.InfoLevel
+	var err error
+
 	Config.MysqlDsn = util.GetEnvString("mysql_dsn", Config.MysqlDsn)
 	Config.ShowSql = false
 	Config.Secret = util.GenStringId()
@@ -23,20 +23,18 @@ func init() {
 		panic(err)
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"Config": Config}).Info("加载配置")
-}
 
-func Init(ctx context.Context) {
-	client, _ := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})
+	client, err := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})
+	if err != nil {
+		panic(err)
+	}
 	if client == nil {
-		return
+		panic("创建ServerCenterClient为空")
 	}
 	client.StartConf(ctx)
 }
 
 func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config, error) {
-	if config.LogLevel <= 0 || config.LogLevel > logrus.TraceLevel {
-		config.LogLevel = logrus.InfoLevel
-	}
 	return config, nil
 }
 
@@ -50,7 +48,7 @@ func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
 	return Config.Secret
 }
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
-	return sdk.GetEnvServerName(ctx)
+	return sdk.GetEnvServerName(ctx, "server_center")
 }
 func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
 	return 5 * time.Minute
@@ -67,7 +65,6 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 		return err
 	}
 	Config = config
-	logrus.SetLevel(Config.LogLevel)
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"Config": Config}).Info("加载配置")
 	return nil
 }

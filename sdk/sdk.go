@@ -25,8 +25,8 @@ func GetEnvServerCenterAddress(ctx context.Context) string {
 func GetEnvServerCenterSecret(ctx context.Context) string {
 	return util.GetEnvString(serverCenterSecretEnvKey, "")
 }
-func GetEnvServerName(ctx context.Context) string {
-	return util.GetServerName()
+func GetEnvServerName(ctx context.Context, defaultServerName string) string {
+	return util.GetServerName(defaultServerName)
 }
 
 type ServerCenterHandlerInter interface {
@@ -53,7 +53,13 @@ func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandl
 
 func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, retry int, handler ServerCenterHandlerInter, localFilePath string) (*ServerCenterClient, error) {
 	if handler == nil {
-		return nil, fmt.Errorf("handler为空")
+		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
+	}
+	if handler.GetServerName(ctx) == "" {
+		return nil, fmt.Errorf("创建ServerCenterClient，ServerName为空")
+	}
+	if localFilePath == "" {
+		return nil, fmt.Errorf("创建ServerCenterClient，localFilePath为空")
 	}
 	httpClient := createHttpClient(timeout, sleep, retry)
 	return &ServerCenterClient{retry: retry, handler: handler, httpClient: httpClient, localFilePath: localFilePath}, nil
@@ -105,10 +111,6 @@ func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
 }
 
 func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
-	if this.running {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("ServerCenterClient开始，已开始")
-		return
-	}
 	for {
 		_, err := this.GetAndParseLastServerConf(ctx)
 		if err == nil {
@@ -116,20 +118,18 @@ func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
 		}
 		time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
 	}
-	this.running = true
 	this.startConfAsync(ctx)
 }
 
 func (this *ServerCenterClient) StartConf(ctx context.Context) {
-	if this.running {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("ServerCenterClient开始，已开始")
-		return
-	}
-	this.running = true
 	this.startConfAsync(ctx)
 }
 
 func (this *ServerCenterClient) startConfAsync(ctx context.Context) {
+	if this.running {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("startConfAsync开始，已开始")
+		return
+	}
 	go func() {
 		defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
 			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startConfAsync，结束")
@@ -137,6 +137,7 @@ func (this *ServerCenterClient) startConfAsync(ctx context.Context) {
 			this.startConfAsync(ctx)
 		})
 
+		this.running = true
 		for {
 			ctx := util.CreateLogCtx()
 			this.GetAndParseLastServerConf(ctx)
@@ -167,14 +168,34 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 }
 
 func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	return this.GetLastServerConfByServerName(ctx, this.handler.GetServerName(ctx))
+	if this.handler.GetAddress(ctx) == "" {
+		return this.GetLocalFileServerConf(ctx)
+	}
+	return this.GetRemoteLastServerConf(ctx)
 }
 
-func (this *ServerCenterClient) GetLastServerConfByServerName(ctx context.Context, serverName string) (*model.ServerConfModel, error) {
-	if serverName == "" || this.handler.GetAddress(ctx) == "" || this.handler.GetSecret(ctx) == "" {
-		return this.getLocalFileServerConf(ctx)
+func (this *ServerCenterClient) GetLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
+	confText, err := util.ReadFileWithString(ctx, this.localFilePath, "")
+	if err != nil {
+		return nil, err
 	}
+	if confText == "" {
+		confText = this.handler.GetDefaultConf(ctx)
+		if confText != "" {
+			util.WriteFileWithString(ctx, this.localFilePath, confText)
+		}
+	}
+	var serverConf model.ServerConfModel
+	serverConf.Version = 1
+	serverConf.ConfText = confText
+	return &serverConf, nil
+}
 
+func (this *ServerCenterClient) GetRemoteLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
+	return this.GetRemoteLastServerConfByServerName(ctx, this.handler.GetServerName(ctx))
+}
+
+func (this *ServerCenterClient) GetRemoteLastServerConfByServerName(ctx context.Context, serverName string) (*model.ServerConfModel, error) {
 	var jwtToken, jsonString string
 	var object *model.ServerConfModel
 	var err error
@@ -192,23 +213,6 @@ func (this *ServerCenterClient) GetLastServerConfByServerName(ctx context.Contex
 		}
 	}
 	return object, err
-}
-
-func (this *ServerCenterClient) getLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	confText, err := util.ReadFileWithString(ctx, this.localFilePath, "")
-	if err != nil {
-		return nil, err
-	}
-	if confText == "" {
-		confText = this.handler.GetDefaultConf(ctx)
-		if confText != "" {
-			util.WriteFileWithString(ctx, this.localFilePath, confText)
-		}
-	}
-	var serverConf model.ServerConfModel
-	serverConf.Version = 1
-	serverConf.ConfText = confText
-	return &serverConf, nil
 }
 
 func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, jsonString string) (*model.ServerConfModel, error) {
@@ -257,6 +261,10 @@ func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, se
 }
 
 func (this *ServerCenterClient) ListAllServerName(ctx context.Context) ([]string, error) {
+	if this.handler.GetAddress(ctx) == "" {
+		return []string{this.handler.GetServerName(ctx)}, nil
+	}
+
 	var jwtToken, jsonString string
 	var object []string
 	var err error

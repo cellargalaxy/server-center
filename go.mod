@@ -3,7 +3,7 @@ module github.com/cellargalaxy/server_center
 go 1.16
 
 require (
-	github.com/cellargalaxy/go_common v0.0.0-20220225152421-cd9f0947e65a
+	github.com/cellargalaxy/go_common v0.0.0-20220226052947-0efcc392e9e2
 	github.com/gin-gonic/gin v1.7.7
 	github.com/glebarez/sqlite v1.3.5
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
@@ -18,7 +18,7 @@ require (
 	github.com/ugorji/go v1.2.6 // indirect
 	github.com/wumansgy/goEncrypt v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
-	golang.org/x/net v0.0.0-20220225143145-3bcbab3f74ef // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220224120231-95c6836cb0e7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

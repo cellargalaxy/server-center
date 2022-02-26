@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/cellargalaxy/server_center/sdk"
 	"github.com/cellargalaxy/server_center/service/db"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -40,12 +42,16 @@ func PullSync(ctx context.Context, address, secret string) error {
 	if err != nil {
 		return err
 	}
+	if client == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("同步拉服务配置，ServerCenterClient为空")
+		return fmt.Errorf("同步拉服务配置，ServerCenterClient为空")
+	}
 	names, err := client.ListAllServerName(ctx)
 	if err != nil {
 		return err
 	}
 	for i := range names {
-		conf, err := client.GetLastServerConfByServerName(ctx, names[i])
+		conf, err := client.GetRemoteLastServerConfByServerName(ctx, names[i])
 		if err != nil {
 			continue
 		}
