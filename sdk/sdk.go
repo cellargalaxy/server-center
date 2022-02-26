@@ -110,6 +110,10 @@ func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
 	return httpClient
 }
 
+func (this *ServerCenterClient) ResetVersion(ctx context.Context) {
+	this.conf.Version = 0
+}
+
 func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
 	for {
 		_, err := this.GetAndParseLastServerConf(ctx)
@@ -186,7 +190,7 @@ func (this *ServerCenterClient) GetLocalFileServerConf(ctx context.Context) (*mo
 		}
 	}
 	var serverConf model.ServerConfModel
-	serverConf.Version = 1
+	serverConf.Version = this.conf.Version + 1
 	serverConf.ConfText = confText
 	return &serverConf, nil
 }
