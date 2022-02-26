@@ -53,7 +53,7 @@ func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
 	return Config.Secret
 }
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
-	return sdk.GetEnvServerName(ctx, "server_center")
+	return sdk.GetEnvServerName(ctx, model.DefaultServerName)
 }
 func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
 	return 5 * time.Minute
