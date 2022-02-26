@@ -38,22 +38,24 @@ func init() {
 	sqlDB.SetMaxOpenConns(1)
 	// SetConnMaxLifetime 设置了连接可复用的最大时间。
 	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	err = db.AutoMigrate(&model.ServerConfModel{})
-	if err != nil {
-		panic(err)
-	}
 }
 
 func initDb(dbConfig *gorm.Config) (*gorm.DB, error) {
 	if config.Config.MysqlDsn != "" {
-		return gorm.Open(mysql.Open(config.Config.MysqlDsn), dbConfig)
+		db, err := gorm.Open(mysql.Open(config.Config.MysqlDsn), dbConfig)
+		return db, err
 	}
+
 	err := util.CreateFolderPath(util.CreateLogCtx(), "resource")
 	if err != nil {
 		return nil, err
 	}
-	return gorm.Open(sqlite.Open("resource/sqlite.db"), dbConfig)
+	db, err := gorm.Open(sqlite.Open("resource/sqlite.db"), dbConfig)
+	if err != nil {
+		return db, err
+	}
+	err = db.AutoMigrate(&model.ServerConfModel{})
+	return db, err
 }
 
 func getDb(ctx context.Context) *gorm.DB {
