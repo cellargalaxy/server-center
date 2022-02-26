@@ -117,7 +117,7 @@ func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
 		if err == nil {
 			break
 		}
-		time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
+		time.Sleep(util.WareDuration(time.Second))
 	}
 	this.startConfAsync(ctx)
 }
