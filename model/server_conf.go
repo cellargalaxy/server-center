@@ -1,6 +1,9 @@
 package model
 
-import "github.com/cellargalaxy/go_common/util"
+import (
+	"github.com/cellargalaxy/go_common/model"
+	"github.com/cellargalaxy/go_common/util"
+)
 
 type ServerConf struct {
 	ServerName string `json:"server_name" form:"server_name" query:"server_name" gorm:"server_name;not null;default:'';uniqueIndex:uniq_name_ver"`
@@ -14,7 +17,7 @@ func (this ServerConf) String() string {
 }
 
 type ServerConfModel struct {
-	Model
+	model.Model
 	ServerConf
 }
 
