@@ -78,3 +78,6 @@ func (this *ServerCenterHandler) GetDefaultConf(ctx context.Context) string {
 	config, _ = checkAndResetConfig(ctx, config)
 	return util.ToYamlString(config)
 }
+func (this *ServerCenterHandler) GetLocalFilePath(ctx context.Context) string {
+	return ""
+}

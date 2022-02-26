@@ -33,6 +33,9 @@ func (this *PullSyncHandler) ParseConf(ctx context.Context, object model.ServerC
 func (this *PullSyncHandler) GetDefaultConf(ctx context.Context) string {
 	return ""
 }
+func (this *PullSyncHandler) GetLocalFilePath(ctx context.Context) string {
+	return ""
+}
 
 func PullSync(ctx context.Context, address, secret string) error {
 	var handler PullSyncHandler

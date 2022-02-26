@@ -36,33 +36,30 @@ type ServerCenterHandlerInter interface {
 	GetInterval(ctx context.Context) time.Duration
 	ParseConf(ctx context.Context, object model.ServerConfModel) error
 	GetDefaultConf(ctx context.Context) string
+	GetLocalFilePath(ctx context.Context) string
 }
 
 type ServerCenterClient struct {
-	retry         int
-	handler       ServerCenterHandlerInter
-	localFilePath string
-	httpClient    *resty.Client
-	conf          model.ServerConfModel
-	running       bool
+	retry      int
+	handler    ServerCenterHandlerInter
+	httpClient *resty.Client
+	conf       model.ServerConfModel
+	running    bool
 }
 
 func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
-	return NewServerCenterClient(ctx, 3*time.Second, 3*time.Second, 3, handler, "resource/config.yml")
+	return NewServerCenterClient(ctx, 3*time.Second, 3*time.Second, 3, handler)
 }
 
-func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, retry int, handler ServerCenterHandlerInter, localFilePath string) (*ServerCenterClient, error) {
+func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, retry int, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
 	if handler == nil {
 		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
 	}
 	if handler.GetServerName(ctx) == "" {
 		return nil, fmt.Errorf("创建ServerCenterClient，ServerName为空")
 	}
-	if localFilePath == "" {
-		return nil, fmt.Errorf("创建ServerCenterClient，localFilePath为空")
-	}
 	httpClient := createHttpClient(timeout, sleep, retry)
-	return &ServerCenterClient{retry: retry, handler: handler, httpClient: httpClient, localFilePath: localFilePath}, nil
+	return &ServerCenterClient{retry: retry, handler: handler, httpClient: httpClient}, nil
 }
 
 func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
@@ -179,14 +176,20 @@ func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.S
 }
 
 func (this *ServerCenterClient) GetLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	confText, err := util.ReadFileWithString(ctx, this.localFilePath, "")
+	localFilePath := this.handler.GetLocalFilePath(ctx)
+	if localFilePath == "" {
+		localFilePath = "resource/" + this.handler.GetServerName(ctx) + ".yml"
+	}
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"localFilePath": localFilePath}).Info("查询本地文件服务配置")
+
+	confText, err := util.ReadFileWithString(ctx, localFilePath, "")
 	if err != nil {
 		return nil, err
 	}
 	if confText == "" {
 		confText = this.handler.GetDefaultConf(ctx)
 		if confText != "" {
-			util.WriteFileWithString(ctx, this.localFilePath, confText)
+			util.WriteFileWithString(ctx, localFilePath, confText)
 		}
 	}
 	var serverConf model.ServerConfModel
