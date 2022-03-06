@@ -53,9 +53,11 @@ func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandl
 
 func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, retry int, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
 	if handler == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
 	}
 	if handler.GetServerName(ctx) == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，ServerName为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，ServerName为空")
 	}
 	httpClient := createHttpClient(timeout, sleep, retry)

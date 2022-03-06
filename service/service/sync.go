@@ -22,7 +22,7 @@ func (this *PullSyncHandler) GetSecret(ctx context.Context) string {
 	return this.secret
 }
 func (this *PullSyncHandler) GetServerName(ctx context.Context) string {
-	return ""
+	return "server_center"
 }
 func (this *PullSyncHandler) GetInterval(ctx context.Context) time.Duration {
 	return 5 * time.Minute
