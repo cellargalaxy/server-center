@@ -65,8 +65,12 @@
                             :options="cm_option" @input="enBase64"></codemirror>
             </b-col>
             <b-col cols="6">
-                <codemirror class="cm" placeholder="base64_text" v-model="base64_text"
-                            :options="cm_option" @input="deBase64"></codemirror>
+                <b-input-group size="sm">
+                    <b-form-input placeholder="base64_text" v-model="base64_text"
+                                  @input="base64TextInput"></b-form-input>
+                    <b-button size="sm" variant="outline-success" @click="copyBase64Plain">copy</b-button>
+                    <b-button size="sm" variant="outline-danger" @click="showBase64Plain">show</b-button>
+                </b-input-group>
             </b-col>
         </b-row>
 
@@ -271,11 +275,28 @@
                     return
                 }
                 this.plain_conf_text = deAESCBC(this.server_conf.conf_text, this.conf_text_secret)
+                this.server_conf.conf_text = ''
             },
             enBase64() {
                 this.base64_text = enBase64(this.plain_base64_text)
             },
-            deBase64() {
+            base64TextInput() {
+                if (this.base64_text === undefined || this.base64_text == null || this.base64_text === '') {
+                    this.plain_base64_text = ''
+                }
+            },
+            copyBase64Plain() {
+                const plain_base64_text = deBase64(this.base64_text)
+                if (plain_base64_text === undefined || plain_base64_text == null || plain_base64_text === '') {
+                    alert('plain_base64_text为空')
+                    return
+                }
+                writeClipboard(plain_base64_text)
+            },
+            showBase64Plain() {
+                if (!window.confirm("确定明文展示？")) {
+                    return
+                }
                 this.plain_base64_text = deBase64(this.base64_text)
             },
             selectMode(mode) {

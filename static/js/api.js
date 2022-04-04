@@ -39,6 +39,10 @@ async function addServerConf(server_name, version, remark, conf_text) {
         dealErr('remark为空')
         return null
     }
+    if (conf_text === undefined || conf_text == null || conf_text === '') {
+        dealErr('conf_text为空')
+        return null
+    }
 
     if (!window.confirm("确定创建？")) {
         return

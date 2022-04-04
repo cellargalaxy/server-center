@@ -208,6 +208,19 @@ function parse2BeijingTimestamp(date) {
     return timestamp
 }
 
+function writeClipboard(text) {
+    const textarea = document.createElement('textarea')
+    textarea.style.opacity = 0
+    textarea.style.position = 'absolute'
+    textarea.style.left = '-100000px'
+    document.body.appendChild(textarea)
+
+    textarea.value = text
+    textarea.select()
+    textarea.setSelectionRange(0, text.length)
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+}
 
 function log(...data) {
     console.log('log', data)
