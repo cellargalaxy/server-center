@@ -2,15 +2,17 @@ package sdk
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"github.com/cellargalaxy/go_common/consd"
 	common_model "github.com/cellargalaxy/go_common/model"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+	"math/rand"
 	"net/http"
+	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -31,7 +33,7 @@ func GetEnvServerName(ctx context.Context, defaultServerName string) string {
 
 type ServerCenterHandlerInter interface {
 	GetServerName(ctx context.Context) string
-	GetAddress(ctx context.Context) string
+	ListAddress(ctx context.Context) []string
 	GetSecret(ctx context.Context) string
 	GetInterval(ctx context.Context) time.Duration
 	ParseConf(ctx context.Context, object model.ServerConfModel) error
@@ -40,18 +42,20 @@ type ServerCenterHandlerInter interface {
 }
 
 type ServerCenterClient struct {
+	timeout    time.Duration
 	retry      int
-	handler    ServerCenterHandlerInter
 	httpClient *resty.Client
+	handler    ServerCenterHandlerInter
+	addresses  []string
 	conf       model.ServerConfModel
-	running    bool
+	once       sync.Once
 }
 
 func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
-	return NewServerCenterClient(ctx, 3*time.Second, 3*time.Second, 3, handler)
+	return NewServerCenterClient(ctx, 3*time.Second, 3, handler)
 }
 
-func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, retry int, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
+func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
 	if handler == nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
@@ -60,53 +64,8 @@ func NewServerCenterClient(ctx context.Context, timeout, sleep time.Duration, re
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，ServerName为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，ServerName为空")
 	}
-	httpClient := createHttpClient(timeout, sleep, retry)
-	return &ServerCenterClient{retry: retry, handler: handler, httpClient: httpClient}, nil
-}
-
-func createHttpClient(timeout, sleep time.Duration, retry int) *resty.Client {
-	httpClient := resty.New().
-		SetTimeout(timeout).
-		SetRetryCount(retry).
-		SetRetryWaitTime(sleep).
-		SetRetryMaxWaitTime(5 * time.Minute).
-		AddRetryCondition(func(response *resty.Response, err error) bool {
-			ctx := util.CreateLogCtx()
-			if response != nil && response.Request != nil {
-				ctx = response.Request.Context()
-			}
-			var statusCode int
-			if response != nil {
-				statusCode = response.StatusCode()
-			}
-			isRetry := statusCode != http.StatusOK || err != nil
-			if isRetry {
-				logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "err": err}).Warn("HTTP请求异常，进行重试")
-			}
-			return isRetry
-		}).
-		SetRetryAfter(func(client *resty.Client, response *resty.Response) (time.Duration, error) {
-			ctx := util.CreateLogCtx()
-			if response != nil && response.Request != nil {
-				ctx = response.Request.Context()
-			}
-			var attempt int
-			if response != nil && response.Request != nil {
-				attempt = response.Request.Attempt
-			}
-			if attempt > retry {
-				logrus.WithContext(ctx).WithFields(logrus.Fields{"attempt": attempt}).Error("HTTP请求异常，超过最大重试次数")
-				return 0, fmt.Errorf("HTTP请求异常，超过最大重试次数")
-			}
-			duration := util.WareDuration(sleep)
-			for i := 0; i < attempt-1; i++ {
-				duration *= 10
-			}
-			logrus.WithContext(ctx).WithFields(logrus.Fields{"attempt": attempt, "duration": duration}).Warn("HTTP请求异常，休眠重试")
-			return duration, nil
-		}).
-		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	return httpClient
+	httpClient := util.CreateNotTryHttpClient(timeout)
+	return &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}, nil
 }
 
 func (this *ServerCenterClient) ResetVersion(ctx context.Context) {
@@ -121,89 +80,100 @@ func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
 		}
 		time.Sleep(util.WareDuration(time.Second))
 	}
-	this.startConfAsync(ctx)
+	this.StartServerCenter(ctx)
 }
-
-func (this *ServerCenterClient) StartConf(ctx context.Context) {
-	this.startConfAsync(ctx)
+func (this *ServerCenterClient) StartServerCenter(ctx context.Context) {
+	this.once.Do(this.startServerCenterAsync)
 }
-
-func (this *ServerCenterClient) startConfAsync(ctx context.Context) {
-	if this.running {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("startConfAsync开始，已开始")
-		return
-	}
+func (this *ServerCenterClient) startServerCenterAsync() {
+	this.startConfAsync()
+}
+func (this *ServerCenterClient) startConfAsync() {
 	go func() {
+		ctx := util.CreateLogCtx()
 		defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
 			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startConfAsync，结束")
-			time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
-			this.startConfAsync(ctx)
+			time.Sleep(util.WareDuration(util.MaxDuration(this.handler.GetInterval(ctx), time.Minute*5)))
+			this.startConfAsync()
 		})
 
-		this.running = true
 		for {
 			ctx := util.CreateLogCtx()
 			this.GetAndParseLastServerConf(ctx)
+			this.CheckAddress(ctx)
 			time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
 		}
 	}()
 }
-
 func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
 	object, err := this.GetLastServerConf(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if object == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.conf.ServerName, "current_version": this.conf.Version}).Info("查询并解析最新服务配置，服务配置无更新")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.handler.GetServerName(ctx), "current_version": this.conf.Version}).Info("查询并解析最新服务配置，服务配置无更新")
 		return nil, nil
 	}
 	if object.Version <= this.conf.Version {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.conf.ServerName, "current_version": this.conf.Version, "last_version": object.Version}).Warn("查询并解析最新服务配置，服务配置无更新")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.handler.GetServerName(ctx), "current_version": this.conf.Version, "last_version": object.Version}).Info("查询并解析最新服务配置，服务配置无更新")
 		return nil, nil
 	}
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.conf.ServerName, "current_version": this.conf.Version, "last_version": object.Version}).Info("查询并解析最新服务配置，服务配置更新")
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.handler.GetServerName(ctx), "current_version": this.conf.Version, "last_version": object.Version}).Info("查询并解析最新服务配置，服务配置更新")
 	err = this.handler.ParseConf(ctx, *object)
-	if err == nil {
-		this.conf = *object
+	if err != nil {
+		return object, err
 	}
-	return object, err
+	this.conf = *object
+	this.saveLocalFileServerConf(ctx, this.conf)
+	return object, nil
 }
 
 func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	if this.handler.GetAddress(ctx) == "" {
+	if len(this.handler.ListAddress(ctx)) == 0 {
 		return this.GetLocalFileServerConf(ctx)
 	}
-	return this.GetRemoteLastServerConf(ctx)
-}
-
-func (this *ServerCenterClient) GetLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	localFilePath := this.handler.GetLocalFilePath(ctx)
-	if localFilePath == "" {
-		localFilePath = "resource/" + this.handler.GetServerName(ctx) + ".yml"
+	object, err := this.GetRemoteLastServerConf(ctx)
+	if object != nil && err == nil {
+		return object, nil
 	}
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"localFilePath": localFilePath}).Info("查询本地文件服务配置")
-
-	confText, err := util.ReadFileWithString(ctx, localFilePath, "")
+	return this.GetLocalFileServerConf(ctx)
+}
+func (this *ServerCenterClient) saveLocalFileServerConf(ctx context.Context, object model.ServerConfModel) error {
+	filePath, err := this.getLocalFilePath(ctx)
+	if err != nil {
+		return err
+	}
+	return util.WriteFileWithString(ctx, filePath, object.ConfText)
+}
+func (this *ServerCenterClient) GetLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
+	filePath, err := this.getLocalFilePath(ctx)
+	if err != nil {
+		return nil, err
+	}
+	confText, err := util.ReadFileWithString(ctx, filePath, "")
 	if err != nil {
 		return nil, err
 	}
 	if confText == "" {
 		confText = this.handler.GetDefaultConf(ctx)
-		if confText != "" {
-			util.WriteFileWithString(ctx, localFilePath, confText)
-		}
 	}
 	var serverConf model.ServerConfModel
-	serverConf.Version = this.conf.Version + 1
+	serverConf.ServerName = this.handler.GetServerName(ctx)
+	serverConf.Version = this.conf.Version + 1 //本地文件更新了也能更新配置
 	serverConf.ConfText = confText
 	return &serverConf, nil
 }
-
+func (this *ServerCenterClient) getLocalFilePath(ctx context.Context) (string, error) {
+	filePath := this.handler.GetLocalFilePath(ctx)
+	if filePath == "" {
+		filePath = "resource/" + this.handler.GetServerName(ctx) + ".yml"
+	}
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"filePath": filePath}).Info("查询本地文件服务配置")
+	return filePath, nil
+}
 func (this *ServerCenterClient) GetRemoteLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
 	return this.GetRemoteLastServerConfByServerName(ctx, this.handler.GetServerName(ctx))
 }
-
 func (this *ServerCenterClient) GetRemoteLastServerConfByServerName(ctx context.Context, serverName string) (*model.ServerConfModel, error) {
 	var jwtToken, jsonString string
 	var object *model.ServerConfModel
@@ -223,7 +193,6 @@ func (this *ServerCenterClient) GetRemoteLastServerConfByServerName(ctx context.
 	}
 	return object, err
 }
-
 func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, jsonString string) (*model.ServerConfModel, error) {
 	type Response struct {
 		Code int                             `json:"code"`
@@ -236,27 +205,26 @@ func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, j
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，解析响应异常")
 		return nil, fmt.Errorf("查询最新服务配置，解析响应异常")
 	}
-	if response.Code != consd.HttpSuccessCode {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"code": response.Code, "msg": response.Msg}).Error("查询最新服务配置，失败")
+	if response.Code != util.HttpSuccessCode {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("查询最新服务配置，失败")
 		return nil, fmt.Errorf("查询最新服务配置，失败")
 	}
 	return response.Data.Conf, nil
 }
-
 func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, serverName, jwtToken string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(util.LogIdKey, fmt.Sprint(util.GetLogId(ctx))).
-		SetHeader("Authorization", "Bearer "+jwtToken).
+		SetHeader(util.LogIdKey, util.GetLogIdString(ctx)).
+		SetHeader(util.GenAuthorizationHeader(ctx, jwtToken)).
 		SetQueryParam("server_name", serverName).
-		SetQueryParam("current_version", fmt.Sprint(this.conf.Version)).
-		Get(this.handler.GetAddress(ctx) + model.GetLastServerConfPath)
+		SetQueryParam("current_version", strconv.Itoa(this.conf.Version)).
+		Get(this.GetUrl(ctx, model.GetLastServerConfPath))
 
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，请求异常")
 		return "", fmt.Errorf("查询最新服务配置，请求异常")
 	}
 	if response == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，响应为空")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("查询最新服务配置，响应为空")
 		return "", fmt.Errorf("查询最新服务配置，响应为空")
 	}
 	statusCode := response.StatusCode()
@@ -270,10 +238,19 @@ func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, se
 }
 
 func (this *ServerCenterClient) ListAllServerName(ctx context.Context) ([]string, error) {
-	if this.handler.GetAddress(ctx) == "" {
-		return []string{this.handler.GetServerName(ctx)}, nil
+	if len(this.handler.ListAddress(ctx)) == 0 {
+		return this.ListLocalAllServerName(ctx)
 	}
-
+	object, err := this.ListRemoteAllServerName(ctx)
+	if len(object) > 0 && err == nil {
+		return object, nil
+	}
+	return this.ListLocalAllServerName(ctx)
+}
+func (this *ServerCenterClient) ListLocalAllServerName(ctx context.Context) ([]string, error) {
+	return []string{this.handler.GetServerName(ctx)}, nil
+}
+func (this *ServerCenterClient) ListRemoteAllServerName(ctx context.Context) ([]string, error) {
 	var jwtToken, jsonString string
 	var object []string
 	var err error
@@ -292,7 +269,6 @@ func (this *ServerCenterClient) ListAllServerName(ctx context.Context) ([]string
 	}
 	return object, err
 }
-
 func (this *ServerCenterClient) analysisListAllServerName(ctx context.Context, jsonString string) ([]string, error) {
 	type Response struct {
 		Code int                             `json:"code"`
@@ -305,25 +281,24 @@ func (this *ServerCenterClient) analysisListAllServerName(ctx context.Context, j
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，解析响应异常")
 		return nil, fmt.Errorf("查询服务配置列表，解析响应异常")
 	}
-	if response.Code != consd.HttpSuccessCode {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"code": response.Code, "msg": response.Msg}).Error("查询服务配置列表，失败")
+	if response.Code != util.HttpSuccessCode {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("查询服务配置列表，失败")
 		return nil, fmt.Errorf("查询服务配置列表，失败")
 	}
 	return response.Data.List, nil
 }
-
 func (this *ServerCenterClient) requestListAllServerName(ctx context.Context, jwtToken string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(util.LogIdKey, fmt.Sprint(util.GetLogId(ctx))).
-		SetHeader("Authorization", "Bearer "+jwtToken).
-		Get(this.handler.GetAddress(ctx) + model.ListAllServerNamePath)
+		SetHeader(util.LogIdKey, util.GetLogIdString(ctx)).
+		SetHeader(util.GenAuthorizationHeader(ctx, jwtToken)).
+		Get(this.GetUrl(ctx, model.ListAllServerNamePath))
 
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，请求异常")
 		return "", fmt.Errorf("查询服务配置列表，请求异常")
 	}
 	if response == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，响应为空")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("查询服务配置列表，响应为空")
 		return "", fmt.Errorf("查询服务配置列表，响应为空")
 	}
 	statusCode := response.StatusCode()
@@ -336,13 +311,95 @@ func (this *ServerCenterClient) requestListAllServerName(ctx context.Context, jw
 	return body, nil
 }
 
+func (this *ServerCenterClient) CheckAddress(ctx context.Context) {
+	addresses := this.handler.ListAddress(ctx)
+	list := make([]string, 0, len(addresses))
+	for i := range addresses {
+		_, err := this.Ping(ctx, addresses[i])
+		if err != nil {
+			continue
+		}
+		list = append(list, addresses[i])
+	}
+	this.addresses = list
+}
+
+func (this *ServerCenterClient) Ping(ctx context.Context, address string) (*common_model.PingResponse, error) {
+	var jwtToken, jsonString string
+	var object *common_model.PingResponse
+	var err error
+	for i := 0; i < this.retry; i++ {
+		jwtToken, err = this.genJWT(ctx)
+		if err != nil {
+			return nil, err
+		}
+		jsonString, err = this.requestPing(ctx, address, jwtToken)
+		if err == nil {
+			object, err = this.analysisPing(ctx, jsonString)
+			if err == nil {
+				return object, err
+			}
+		}
+	}
+	return object, err
+}
+func (this *ServerCenterClient) analysisPing(ctx context.Context, jsonString string) (*common_model.PingResponse, error) {
+	type Response struct {
+		Code int                       `json:"code"`
+		Msg  string                    `json:"msg"`
+		Data common_model.PingResponse `json:"data"`
+	}
+	var response Response
+	err := util.UnmarshalJsonString(jsonString, &response)
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("ping，解析响应异常")
+		return nil, fmt.Errorf("ping，解析响应异常")
+	}
+	if response.Code != util.HttpSuccessCode {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("ping，失败")
+		return nil, fmt.Errorf("ping，失败")
+	}
+	return &response.Data, nil
+}
+func (this *ServerCenterClient) requestPing(ctx context.Context, jwtToken, address string) (string, error) {
+	response, err := this.httpClient.R().SetContext(ctx).
+		SetHeader(util.LogIdKey, util.GetLogIdString(ctx)).
+		SetHeader(util.GenAuthorizationHeader(ctx, jwtToken)).
+		Get(this.getUrl(ctx, address, model.ListAllServerNamePath))
+
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("ping，请求异常")
+		return "", fmt.Errorf("ping，请求异常")
+	}
+	if response == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("ping，响应为空")
+		return "", fmt.Errorf("ping，响应为空")
+	}
+	statusCode := response.StatusCode()
+	body := response.String()
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "body": body}).Info("ping，响应")
+	if statusCode != http.StatusOK {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("ping，响应码失败")
+		return "", fmt.Errorf("ping，响应码失败: %+v", statusCode)
+	}
+	return body, nil
+}
+
+func (this *ServerCenterClient) GetUrl(ctx context.Context, path string) string {
+	addresses := this.addresses
+	if len(addresses) == 0 {
+		return ""
+	}
+	index := rand.Intn(len(addresses))
+	return this.getUrl(ctx, addresses[index], path)
+}
+func (this *ServerCenterClient) getUrl(ctx context.Context, address, path string) string {
+	if strings.HasSuffix(address, "/") && strings.HasPrefix(path, "/") && len(path) > 0 {
+		path = path[1:]
+	}
+	return address + path
+}
+
 func (this *ServerCenterClient) genJWT(ctx context.Context) (string, error) {
-	now := time.Now()
-	var claims common_model.Claims
-	claims.IssuedAt = now.Unix()
-	claims.ExpiresAt = now.Unix() + int64(this.retry*3)
-	claims.RequestId = fmt.Sprint(util.GenId())
-	claims.Caller = this.handler.GetServerName(ctx)
-	jwtToken, err := util.GenJWT(ctx, this.handler.GetSecret(ctx), claims)
-	return jwtToken, err
+	return util.GenDefaultJWT(ctx, this.timeout*time.Duration(this.retry+1), this.handler.GetSecret(ctx))
 }
