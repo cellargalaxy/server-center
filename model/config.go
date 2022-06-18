@@ -15,9 +15,10 @@ const (
 )
 
 type Config struct {
-	MysqlDsn string `yaml:"mysql_dsn" json:"-"`
-	ShowSql  bool   `yaml:"show_sql" json:"show_sql"`
-	Secret   string `yaml:"secret" json:"-"`
+	MysqlDsn  string   `yaml:"mysql_dsn" json:"-"`
+	ShowSql   bool     `yaml:"show_sql" json:"show_sql"`
+	Addresses []string `yaml:"addresses" json:"addresses"`
+	Secret    string   `yaml:"secret" json:"-"`
 
 	PullSyncCron   string `yaml:"pull_sync_cron" json:"pull_sync_cron"`
 	PullSyncHost   string `yaml:"pull_sync_host" json:"pull_sync_host"`
