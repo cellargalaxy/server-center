@@ -345,7 +345,7 @@ func (this *ServerCenterClient) Ping(ctx context.Context, address string) (*comm
 		if err != nil {
 			return nil, err
 		}
-		jsonString, err = this.requestPing(ctx, address, jwtToken)
+		jsonString, err = this.requestPing(ctx, jwtToken, address)
 		if err == nil {
 			object, err = this.analysisPing(ctx, jsonString)
 			if err == nil {
