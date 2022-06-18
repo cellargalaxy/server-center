@@ -30,7 +30,10 @@ func init() {
 	ctx := util.CreateLogCtx()
 	var err error
 
-	addresses = append(addresses, GetEnvServerCenterAddress(ctx))
+	address := GetEnvServerCenterAddress(ctx)
+	if address != "" {
+		addresses = append(addresses, address)
+	}
 	secret = GetEnvServerCenterSecret(ctx)
 
 	var handler ServerCenterHandler
@@ -155,7 +158,7 @@ func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.S
 		return this.GetLocalFileServerConf(ctx)
 	}
 	object, err := this.GetRemoteLastServerConf(ctx)
-	if object != nil && err == nil {
+	if err == nil {
 		return object, nil
 	}
 	return this.GetLocalFileServerConf(ctx)

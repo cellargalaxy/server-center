@@ -38,7 +38,7 @@ func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
 	return sdk.GetEnvServerName(ctx, model.DefaultServerName)
 }
 func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
-	return 5 * time.Minute
+	return time.Minute * 5
 }
 func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
 	var config model.Config

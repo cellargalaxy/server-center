@@ -55,7 +55,7 @@ func PullSync(ctx context.Context, address, secret string) error {
 	}
 	for i := range names {
 		conf, err := client.GetRemoteLastServerConfByServerName(ctx, names[i])
-		if err != nil {
+		if conf == nil || err != nil {
 			continue
 		}
 		db.AddServerConf(ctx, conf.ServerConf)
