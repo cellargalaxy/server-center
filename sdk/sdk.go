@@ -33,8 +33,8 @@ func init() {
 	addresses = append(addresses, GetEnvServerCenterAddress(ctx))
 	secret = GetEnvServerCenterSecret(ctx)
 
-	handler := &ServerCenterHandler{}
-	serverCenterClient, err = NewDefaultServerCenterClient(ctx, handler)
+	var handler ServerCenterHandler
+	serverCenterClient, err = NewDefaultServerCenterClient(ctx, &handler)
 	if err != nil {
 		panic(err)
 	}

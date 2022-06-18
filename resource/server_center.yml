@@ -1,6 +1,0 @@
-mysql_dsn: ""
-show_sql: false
-secret: "secret_secret"
-pull_sync_cron: ""
-pull_sync_host: "http://127.0.0.1:7557"
-pull_sync_secret: "secret_secret"

@@ -37,6 +37,9 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 		}
 		ls = append(ls, list[i])
 	}
+	if this.GetServerName(ctx) == GetEnvServerName(ctx, this.GetServerName(ctx)) {
+		ls = append(ls, "http://127.0.0.1"+model.ListenAddress)
+	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"ls": ls}).Info("加载server_center地址")
 	if len(ls) == 0 {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("server_center地址为空")

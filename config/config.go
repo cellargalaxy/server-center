@@ -24,18 +24,7 @@ func init() {
 		panic("创建ServerCenterClient为空")
 	}
 	client.StartConfWithInitConf(ctx)
-	handler.address = "http://127.0.0.1" + model.ListenAddress
-	client.ResetVersion(ctx)
-
-	Config.MysqlDsn = util.GetEnvString("mysql_dsn", Config.MysqlDsn)
-	Config.ShowSql = false
-	Config.Secret = util.GenStringId()
-	Config, err = checkAndResetConfig(ctx, Config)
-	if err != nil {
-		panic(err)
-	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"Config": Config}).Info("加载配置")
-
 }
 
 func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config, error) {
@@ -43,15 +32,8 @@ func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config
 }
 
 type ServerCenterHandler struct {
-	address string
 }
 
-func (this *ServerCenterHandler) GetAddress(ctx context.Context) string {
-	return this.address
-}
-func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
-	return Config.Secret
-}
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
 	return sdk.GetEnvServerName(ctx, model.DefaultServerName)
 }
@@ -77,7 +59,4 @@ func (this *ServerCenterHandler) GetDefaultConf(ctx context.Context) string {
 	var config model.Config
 	config, _ = checkAndResetConfig(ctx, config)
 	return util.ToYamlString(config)
-}
-func (this *ServerCenterHandler) GetLocalFilePath(ctx context.Context) string {
-	return ""
 }
