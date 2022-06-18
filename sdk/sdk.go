@@ -8,6 +8,7 @@ import (
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+	"math"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -86,7 +87,9 @@ func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int
 		return nil, fmt.Errorf("创建ServerCenterClient，ServerName为空")
 	}
 	httpClient := util.CreateNotTryHttpClient(timeout)
-	return &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}, nil
+	client := &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}
+	client.conf.Version = math.MinInt32
+	return client, nil
 }
 
 func (this *ServerCenterClient) ResetVersion(ctx context.Context) {
