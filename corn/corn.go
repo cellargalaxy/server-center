@@ -37,7 +37,7 @@ func (this pullSyncJob) String() string {
 }
 
 func (this *pullSyncJob) Run() {
-	ctx := util.CreateLogCtx()
+	ctx := util.GenCtx()
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"pullSyncJob": this}).Info("定时任务，执行任务开始")
 	service.PullSync(ctx, this.Address, this.Secret)
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"pullSyncJob": this}).Info("定时任务，执行任务完成")

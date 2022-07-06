@@ -27,7 +27,7 @@ var secret string
 var serverCenterClient *ServerCenterClient
 
 func init() {
-	ctx := util.CreateLogCtx()
+	ctx := util.GenCtx()
 	var err error
 
 	address := GetEnvServerCenterAddress(ctx)
@@ -89,7 +89,7 @@ func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，ServerName为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，ServerName为空")
 	}
-	httpClient := util.CreateNotTryHttpClient(timeout)
+	httpClient := util.HttpClientNotReTry
 	client := &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}
 	client.conf.Version = math.MinInt32
 	return client, nil
@@ -117,7 +117,7 @@ func (this *ServerCenterClient) startServerCenterAsync() {
 }
 func (this *ServerCenterClient) startConfAsync() {
 	go func() {
-		ctx := util.CreateLogCtx()
+		ctx := util.GenCtx()
 		defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
 			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startConfAsync，结束")
 			time.Sleep(util.WareDuration(util.MaxDuration(this.handler.GetInterval(ctx), time.Minute*5)))
@@ -125,7 +125,7 @@ func (this *ServerCenterClient) startConfAsync() {
 		})
 
 		for {
-			ctx := util.CreateLogCtx()
+			ctx := util.GenCtx()
 			this.GetAndParseLastServerConf(ctx)
 			time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
 		}

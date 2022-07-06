@@ -8,7 +8,7 @@ import (
 )
 
 func TestAddServerConf(test *testing.T) {
-	ctx := util.CreateLogCtx()
+	ctx := util.GenCtx()
 	var object model.ServerConf
 	object.ServerName = "server_center"
 	object.Version = 10
@@ -26,7 +26,7 @@ secret: secret_secret`
 }
 
 func TestListServerConf(test *testing.T) {
-	ctx := util.CreateLogCtx()
+	ctx := util.GenCtx()
 	var object model.ServerConfInquiry
 	object.ServerName = "server_center"
 	object.Version = 2
@@ -39,7 +39,7 @@ func TestListServerConf(test *testing.T) {
 }
 
 func TestListAllServerName(test *testing.T) {
-	ctx := util.CreateLogCtx()
+	ctx := util.GenCtx()
 	response, err := db.ListAllServerName(ctx)
 	test.Logf("response: %+v\r\n", util.ToJsonIndentString(response))
 	if err != nil {

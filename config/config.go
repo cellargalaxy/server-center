@@ -12,7 +12,7 @@ import (
 var Config = model.Config{}
 
 func init() {
-	ctx := util.CreateLogCtx()
+	ctx := util.GenCtx()
 	var err error
 
 	var handler ServerCenterHandler

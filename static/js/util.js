@@ -36,12 +36,6 @@ function deBase64(base64) {
     return text
 }
 
-/**
- * AES CBC加密
- * @param secret
- * @param text
- * @returns {string}
- */
 function enAESCBC(text, secret) {
     const data = CryptoJS.enc.Utf8.parse(text)
     const key = enSha256Hex(secret)
@@ -54,12 +48,6 @@ function enAESCBC(text, secret) {
     return encrypt.toString()
 }
 
-/**
- * AES CBC解密
- * @param word
- * @returns {string}
- * @constructor
- */
 function deAESCBC(text, secret) {
     const key = enSha256Hex(secret)
     const iv = enMd5(secret)
@@ -100,7 +88,7 @@ function enJwt() {
     const exp = getTokenExp()
     const header = {'typ': 'JWT', 'alg': 'HS256'}
     const headerJson = JSON.stringify(header)
-    const payload = {'iat': timeStamp, 'exp': timeStamp + exp, 'allow_re_request': false, 'request_id': genId()}
+    const payload = {'iat': timeStamp, 'exp': timeStamp + exp, 'reqid': genId()}
     const payloadJson = JSON.stringify(payload)
     const secret = getSecret()
     const secretHex = enSha256Hex(secret)

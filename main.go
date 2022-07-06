@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	ctx := util.CreateLogCtx()
+	ctx := util.GenCtx()
 	util.InitDefaultLog(model.DefaultServerName)
 	corn.Init(ctx)
 }

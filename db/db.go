@@ -46,7 +46,7 @@ func initDb(dbConfig *gorm.Config) (*gorm.DB, error) {
 		return db, err
 	}
 
-	err := util.CreateFolderPath(util.CreateLogCtx(), "resource")
+	err := util.CreateFolderPath(util.GenCtx(), "resource")
 	if err != nil {
 		return nil, err
 	}
