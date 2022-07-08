@@ -31,7 +31,9 @@ func (ServerConfModel) TableName() string {
 
 type ServerConfInquiry struct {
 	ServerConfModel
-	CurrentVersion int `json:"current_version" form:"current_version" query:"current_version"`
+	StartVersion int `json:"start_version" form:"start_version" query:"start_version"`
+	Offset       int `json:"offset" form:"offset" query:"offset"`
+	Limit        int `json:"limit" form:"limit" query:"limit"`
 }
 
 func (this ServerConfInquiry) String() string {
@@ -47,7 +49,7 @@ func (this AddServerConfRequest) String() string {
 }
 
 type AddServerConfResponse struct {
-	Conf *ServerConfModel `json:"conf"`
+	Conf ServerConfModel `json:"conf"`
 }
 
 func (this AddServerConfResponse) String() string {

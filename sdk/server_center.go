@@ -12,6 +12,12 @@ import (
 type ServerCenterHandler struct {
 }
 
+func (this *ServerCenterHandler) GetAddress(ctx context.Context) string {
+	return GetEnvServerCenterAddress(ctx)
+}
+func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
+	return GetEnvServerCenterSecret(ctx)
+}
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
 	return model.DefaultServerName
 }

@@ -8,7 +8,7 @@ import (
 
 func AddServerConf(ctx context.Context, request model.AddServerConfRequest) (*model.AddServerConfResponse, error) {
 	object, err := db.AddServerConf(ctx, request.ServerConf)
-	return &model.AddServerConfResponse{Conf: &object}, err
+	return &model.AddServerConfResponse{Conf: object}, err
 }
 
 func RemoveServerConf(ctx context.Context, request model.RemoveServerConfRequest) (model.RemoveServerConfResponse, error) {
@@ -31,9 +31,5 @@ func ListServerConf(ctx context.Context, request model.ListServerConfRequest) (*
 
 func ListAllServerName(ctx context.Context, request model.ListAllServerNameRequest) (*model.ListAllServerNameResponse, error) {
 	object, err := db.ListAllServerName(ctx)
-	names := make([]string, 0, len(object))
-	for i := range object {
-		names = append(names, object[i].ServerName)
-	}
-	return &model.ListAllServerNameResponse{List: names}, err
+	return &model.ListAllServerNameResponse{List: object}, err
 }

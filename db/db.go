@@ -35,7 +35,7 @@ func init() {
 	// SetMaxIdleConns 设置空闲连接池中连接的最大数量
 	sqlDB.SetMaxIdleConns(1)
 	// SetMaxOpenConns 设置打开数据库连接的最大数量。
-	sqlDB.SetMaxOpenConns(1)
+	sqlDB.SetMaxOpenConns(8)
 	// SetConnMaxLifetime 设置了连接可复用的最大时间。
 	sqlDB.SetConnMaxLifetime(time.Hour)
 }
@@ -62,6 +62,9 @@ func getDb(ctx context.Context) *gorm.DB {
 	return db.WithContext(ctx)
 }
 
-func getTx(ctx context.Context) *gorm.DB {
-	return getDb(ctx).Begin()
+func getWhere(ctx context.Context, where *gorm.DB) *gorm.DB {
+	if where != nil {
+		return where
+	}
+	return getDb(ctx)
 }

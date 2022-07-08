@@ -17,28 +17,25 @@ func InsertServerConf(ctx context.Context, object model.ServerConfModel) (model.
 	}
 	return object, nil
 }
+func whereServerConf(ctx context.Context, where *gorm.DB, inquiry model.ServerConfInquiry) *gorm.DB {
+	if inquiry.Id > 0 {
+		where = getWhere(ctx, where).Where("id = ?", inquiry.Id)
+	}
+	if inquiry.ServerName != "" {
+		where = getWhere(ctx, where).Where("server_name = ?", inquiry.ServerName)
+	}
+	if inquiry.Version > 0 {
+		where = getWhere(ctx, where).Where("version = ?", inquiry.Version)
+	}
+	if inquiry.StartVersion > 0 {
+		where = getWhere(ctx, where).Where("version >= ?", inquiry.StartVersion)
+	}
+	return where
+}
 
 func DeleteServerConf(ctx context.Context, inquiry model.ServerConfInquiry) (model.ServerConfModel, error) {
 	var where *gorm.DB
-	if inquiry.Id > 0 {
-		if where == nil {
-			where = getDb(ctx)
-		}
-		where = where.Where("id = ?", inquiry.Id)
-	}
-	if inquiry.ServerName != "" {
-		if where == nil {
-			where = getDb(ctx)
-		}
-		where = where.Where("server_name = ?", inquiry.ServerName)
-	}
-	if inquiry.Version > 0 {
-		if where == nil {
-			where = getDb(ctx)
-		}
-		where = where.Where("version = ?", inquiry.Version)
-	}
-
+	where = whereServerConf(ctx, where, inquiry)
 	if where == nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"inquiry": inquiry}).Warn("删除服务配，删除条件为空")
 		return inquiry.ServerConfModel, fmt.Errorf("删除服务配，删除条件为空")
@@ -53,25 +50,9 @@ func DeleteServerConf(ctx context.Context, inquiry model.ServerConfInquiry) (mod
 	return inquiry.ServerConfModel, nil
 }
 
-func serverConfWhere(where *gorm.DB, inquiry model.ServerConfInquiry) *gorm.DB {
-	if inquiry.Id > 0 {
-		where = where.Where("id = ?", inquiry.Id)
-	}
-	if inquiry.ServerName != "" {
-		where = where.Where("server_name = ?", inquiry.ServerName)
-	}
-	if inquiry.Version > 0 {
-		where = where.Where("version = ?", inquiry.Version)
-	}
-	if inquiry.CurrentVersion > 0 {
-		where = where.Where("version > ?", inquiry.CurrentVersion)
-	}
-	return where
-}
-
 func SelectLastServerConf(ctx context.Context, inquiry model.ServerConfInquiry) (*model.ServerConfModel, error) {
 	where := getDb(ctx)
-	where = serverConfWhere(where, inquiry)
+	where = whereServerConf(ctx, where, inquiry)
 	where = where.Order("version desc")
 
 	var object model.ServerConfModel
@@ -90,8 +71,14 @@ func SelectLastServerConf(ctx context.Context, inquiry model.ServerConfInquiry) 
 
 func SelectSomeServerConf(ctx context.Context, inquiry model.ServerConfInquiry) ([]model.ServerConfModel, error) {
 	where := getDb(ctx)
-	where = serverConfWhere(where, inquiry)
+	where = whereServerConf(ctx, where, inquiry)
 	where = where.Order("version desc")
+	if inquiry.Offset > 0 {
+		where.Offset(inquiry.Offset)
+	}
+	if inquiry.Limit > 0 {
+		where.Limit(inquiry.Limit)
+	}
 
 	var list []model.ServerConfModel
 	err := where.Find(&list).Error
@@ -107,10 +94,10 @@ func SelectSomeServerConf(ctx context.Context, inquiry model.ServerConfInquiry) 
 	return list, err
 }
 
-func SelectServerConfDistinctServerName(ctx context.Context, inquiry model.ServerConfInquiry) ([]model.ServerConfModel, error) {
+func SelectServerConfDistinctServerName(ctx context.Context, inquiry model.ServerConfInquiry) ([]string, error) {
 	where := getDb(ctx)
 	where = where.Select("distinct server_name")
-	where = serverConfWhere(where, inquiry)
+	where = whereServerConf(ctx, where, inquiry)
 
 	var list []model.ServerConfModel
 	err := where.Find(&list).Error
@@ -122,6 +109,10 @@ func SelectServerConfDistinctServerName(ctx context.Context, inquiry model.Serve
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"inquiry": inquiry, "err": err}).Error("查询服务配置列表，异常")
 		return nil, fmt.Errorf("查询服务配置列表，异常: %+v", err)
 	}
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"len(list)": len(list)}).Debug("查询服务配置列表，完成")
-	return list, err
+	names := make([]string, 0, len(list))
+	for i := range list {
+		names = append(names, list[i].ServerName)
+	}
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"len(names)": len(names)}).Debug("查询服务配置列表，完成")
+	return names, err
 }

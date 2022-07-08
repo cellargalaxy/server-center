@@ -8,10 +8,7 @@ import (
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
-	"math"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,19 +19,11 @@ const (
 	serverCenterSecretEnvKey  = "server_center_secret"
 )
 
-var addresses []string
-var secret string
 var serverCenterClient *ServerCenterClient
 
 func init() {
 	ctx := util.GenCtx()
 	var err error
-
-	address := GetEnvServerCenterAddress(ctx)
-	if address != "" {
-		addresses = append(addresses, address)
-	}
-	secret = GetEnvServerCenterSecret(ctx)
 
 	var handler ServerCenterHandler
 	serverCenterClient, err = NewDefaultServerCenterClient(ctx, &handler)
@@ -56,11 +45,10 @@ func GetEnvServerCenterSecret(ctx context.Context) string {
 func GetEnvServerName(ctx context.Context, defaultServerName string) string {
 	return util.GetServerName(defaultServerName)
 }
-func ListAddress(ctx context.Context) []string {
-	return addresses
-}
 
 type ServerCenterHandlerInter interface {
+	GetAddress(ctx context.Context) string
+	GetSecret(ctx context.Context) string
 	GetServerName(ctx context.Context) string
 	GetInterval(ctx context.Context) time.Duration
 	ParseConf(ctx context.Context, object model.ServerConfModel) error
@@ -85,18 +73,9 @@ func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
 	}
-	if handler.GetServerName(ctx) == "" {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，ServerName为空")
-		return nil, fmt.Errorf("创建ServerCenterClient，ServerName为空")
-	}
 	httpClient := util.HttpClientNotRetry
 	client := &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}
-	client.conf.Version = math.MinInt32
 	return client, nil
-}
-
-func (this *ServerCenterClient) ResetVersion(ctx context.Context) {
-	this.conf.Version = 0
 }
 
 func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
@@ -137,8 +116,8 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 		return nil, err
 	}
 	if object == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.handler.GetServerName(ctx), "current_version": this.conf.Version}).Info("查询并解析最新服务配置，服务配置无更新")
-		return nil, nil
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.handler.GetServerName(ctx), "current_version": this.conf.Version}).Error("查询并解析最新服务配置，服务配置为空")
+		return nil, fmt.Errorf("查询并解析最新服务配置，服务配置为空")
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.handler.GetServerName(ctx), "current_version": this.conf.Version, "last_version": object.Version}).Info("查询并解析最新服务配置，查询服务配置")
 	if object.Version <= this.conf.Version {
@@ -154,7 +133,7 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 }
 
 func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	if len(addresses) == 0 {
+	if this.handler.GetAddress(ctx) == "" {
 		return this.GetLocalFileServerConf(ctx)
 	}
 	object, err := this.GetRemoteLastServerConf(ctx)
@@ -162,13 +141,6 @@ func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.S
 		return object, nil
 	}
 	return this.GetLocalFileServerConf(ctx)
-}
-func (this *ServerCenterClient) saveLocalFileServerConf(ctx context.Context, confText string) error {
-	filePath, err := this.getLocalFilePath(ctx)
-	if err != nil {
-		return err
-	}
-	return util.WriteFileWithString(ctx, filePath, confText)
 }
 func (this *ServerCenterClient) GetLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
 	filePath, err := this.getLocalFilePath(ctx)
@@ -181,15 +153,20 @@ func (this *ServerCenterClient) GetLocalFileServerConf(ctx context.Context) (*mo
 	}
 	if confText == "" {
 		confText = this.handler.GetDefaultConf(ctx)
-		if confText != "" {
-			util.WriteFileWithString(ctx, filePath, confText)
-		}
+		this.saveLocalFileServerConf(ctx, confText)
 	}
 	var serverConf model.ServerConfModel
 	serverConf.ServerName = this.handler.GetServerName(ctx)
 	serverConf.Version = this.conf.Version + 1 //本地文件更新了也能更新配置
 	serverConf.ConfText = confText
 	return &serverConf, nil
+}
+func (this *ServerCenterClient) saveLocalFileServerConf(ctx context.Context, confText string) error {
+	filePath, err := this.getLocalFilePath(ctx)
+	if err != nil {
+		return err
+	}
+	return util.WriteFileWithString(ctx, filePath, confText)
 }
 func (this *ServerCenterClient) getLocalFilePath(ctx context.Context) (string, error) {
 	filePath := "resource/" + this.handler.GetServerName(ctx) + ".yml"
@@ -200,15 +177,11 @@ func (this *ServerCenterClient) GetRemoteLastServerConf(ctx context.Context) (*m
 	return this.GetRemoteLastServerConfByServerName(ctx, this.handler.GetServerName(ctx))
 }
 func (this *ServerCenterClient) GetRemoteLastServerConfByServerName(ctx context.Context, serverName string) (*model.ServerConfModel, error) {
-	var jwtToken, jsonString string
+	var jsonString string
 	var object *model.ServerConfModel
 	var err error
 	for i := 0; i < this.retry; i++ {
-		jwtToken, err = this.genJWT(ctx)
-		if err != nil {
-			return nil, err
-		}
-		jsonString, err = this.requestGetLastServerConf(ctx, serverName, jwtToken)
+		jsonString, err = this.requestGetLastServerConf(ctx, serverName)
 		if err == nil {
 			object, err = this.analysisGetLastServerConf(ctx, jsonString)
 			if err == nil {
@@ -236,12 +209,10 @@ func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, j
 	}
 	return response.Data.Conf, nil
 }
-func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, serverName, jwtToken string) (string, error) {
+func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, serverName string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(util.LogIdKey, util.GetLogIdString(ctx)).
-		SetHeader(util.GenAuthorizationHeader(ctx, jwtToken)).
+		SetHeader(this.genJWT(ctx)).
 		SetQueryParam("server_name", serverName).
-		SetQueryParam("current_version", strconv.Itoa(this.conf.Version)).
 		Get(this.GetUrl(ctx, model.GetLastServerConfPath))
 
 	if err != nil {
@@ -263,7 +234,7 @@ func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, se
 }
 
 func (this *ServerCenterClient) ListAllServerName(ctx context.Context) ([]string, error) {
-	if len(addresses) == 0 {
+	if this.handler.GetAddress(ctx) == "" {
 		return this.ListLocalAllServerName(ctx)
 	}
 	object, err := this.ListRemoteAllServerName(ctx)
@@ -276,15 +247,11 @@ func (this *ServerCenterClient) ListLocalAllServerName(ctx context.Context) ([]s
 	return []string{this.handler.GetServerName(ctx)}, nil
 }
 func (this *ServerCenterClient) ListRemoteAllServerName(ctx context.Context) ([]string, error) {
-	var jwtToken, jsonString string
+	var jsonString string
 	var object []string
 	var err error
 	for i := 0; i < this.retry; i++ {
-		jwtToken, err = this.genJWT(ctx)
-		if err != nil {
-			return nil, err
-		}
-		jsonString, err = this.requestListAllServerName(ctx, jwtToken)
+		jsonString, err = this.requestListAllServerName(ctx)
 		if err == nil {
 			object, err = this.analysisListAllServerName(ctx, jsonString)
 			if err == nil {
@@ -312,10 +279,9 @@ func (this *ServerCenterClient) analysisListAllServerName(ctx context.Context, j
 	}
 	return response.Data.List, nil
 }
-func (this *ServerCenterClient) requestListAllServerName(ctx context.Context, jwtToken string) (string, error) {
+func (this *ServerCenterClient) requestListAllServerName(ctx context.Context) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(util.LogIdKey, util.GetLogIdString(ctx)).
-		SetHeader(util.GenAuthorizationHeader(ctx, jwtToken)).
+		SetHeader(this.genJWT(ctx)).
 		Get(this.GetUrl(ctx, model.ListAllServerNamePath))
 
 	if err != nil {
@@ -337,15 +303,11 @@ func (this *ServerCenterClient) requestListAllServerName(ctx context.Context, jw
 }
 
 func (this *ServerCenterClient) Ping(ctx context.Context, address string) (*common_model.PingResponse, error) {
-	var jwtToken, jsonString string
+	var jsonString string
 	var object *common_model.PingResponse
 	var err error
 	for i := 0; i < this.retry; i++ {
-		jwtToken, err = this.genJWT(ctx)
-		if err != nil {
-			return nil, err
-		}
-		jsonString, err = this.requestPing(ctx, jwtToken, address)
+		jsonString, err = this.requestPing(ctx, address)
 		if err == nil {
 			object, err = this.analysisPing(ctx, jsonString)
 			if err == nil {
@@ -373,10 +335,9 @@ func (this *ServerCenterClient) analysisPing(ctx context.Context, jsonString str
 	}
 	return &response.Data, nil
 }
-func (this *ServerCenterClient) requestPing(ctx context.Context, jwtToken, address string) (string, error) {
+func (this *ServerCenterClient) requestPing(ctx context.Context, address string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(util.LogIdKey, util.GetLogIdString(ctx)).
-		SetHeader(util.GenAuthorizationHeader(ctx, jwtToken)).
+		SetHeader(this.genJWT(ctx)).
 		Get(this.getUrl(ctx, address, model.ListAllServerNamePath))
 
 	if err != nil {
@@ -398,12 +359,7 @@ func (this *ServerCenterClient) requestPing(ctx context.Context, jwtToken, addre
 }
 
 func (this *ServerCenterClient) GetUrl(ctx context.Context, path string) string {
-	list := addresses
-	if len(list) == 0 {
-		return ""
-	}
-	index := rand.Intn(len(list))
-	return this.getUrl(ctx, list[index], path)
+	return this.getUrl(ctx, this.handler.GetAddress(ctx), path)
 }
 func (this *ServerCenterClient) getUrl(ctx context.Context, address, path string) string {
 	if strings.HasSuffix(address, "/") && strings.HasPrefix(path, "/") && len(path) > 0 {
@@ -412,6 +368,6 @@ func (this *ServerCenterClient) getUrl(ctx context.Context, address, path string
 	return address + path
 }
 
-func (this *ServerCenterClient) genJWT(ctx context.Context) (string, error) {
-	return util.GenDefaultJWT(ctx, this.timeout*time.Duration(this.retry+1), secret)
+func (this *ServerCenterClient) genJWT(ctx context.Context) (string, string) {
+	return util.GenAuthorizationJWT(ctx, this.timeout, this.handler.GetSecret(ctx))
 }

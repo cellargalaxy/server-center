@@ -14,11 +14,11 @@ func Controller() error {
 	engine := gin.Default()
 	engine.Use(claims)
 	engine.Use(util.GinLog)
-	engine.GET("/ping", util.Ping)
-	engine.POST("/ping", validate, util.Ping)
+	engine.GET(util.PingPath, util.Ping)
+	engine.POST(util.PingPath, validate, util.Ping)
 
 	engine.Use(staticCache)
-	engine.StaticFS("/static", http.FS(static.StaticFile))
+	engine.StaticFS(model.StaticPath, http.FS(static.StaticFile))
 
 	engine.POST(model.AddServerConfPath, validate, addServerConf)
 	engine.POST(model.RemoveServerConfPath, validate, removeServerConf)
@@ -34,7 +34,7 @@ func Controller() error {
 }
 
 func staticCache(c *gin.Context) {
-	if strings.HasPrefix(c.Request.RequestURI, "/static") {
+	if strings.HasPrefix(c.Request.RequestURI, model.StaticPath) {
 		c.Header("Cache-Control", "max-age=86400")
 	}
 }

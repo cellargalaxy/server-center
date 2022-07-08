@@ -7,6 +7,7 @@ import (
 const (
 	DefaultServerName     = "server_center"
 	ListenAddress         = ":7557"
+	StaticPath            = "/static"
 	AddServerConfPath     = "/api/addServerConf"
 	RemoveServerConfPath  = "/api/removeServerConf"
 	GetLastServerConfPath = "/api/getLastServerConf"
