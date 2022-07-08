@@ -4,12 +4,10 @@ github.com/PuerkitoBio/goquery v1.8.0/go.mod h1:ypIiRMtY7COPGk+I/YbZLbxsxn9g5ejn
 github.com/andybalholm/cascadia v1.3.1/go.mod h1:R4bJ1UQfqADjvDa4P6HZHLh/3OxWWEqc0Sk8XGwHqvA=
 github.com/antonfisher/nested-logrus-formatter v1.3.1 h1:NFJIr+pzwv5QLHTPyKz9UMEoHck02Q9L0FP13b/xSbQ=
 github.com/antonfisher/nested-logrus-formatter v1.3.1/go.mod h1:6WTfyWFkBc9+zyBaKIqRrg/KwMqBbodBjgbHjDz7zjA=
-github.com/cellargalaxy/go_common v0.0.0-20220617135227-50ca2d9aacc3 h1:mnixsE/blZ3vhHxE4Iemm/f33wEDRCtrENhbYej3g9s=
-github.com/cellargalaxy/go_common v0.0.0-20220617135227-50ca2d9aacc3/go.mod h1:TA6nb4Am0/LKF17rHnxhvfJfjOben7dHcDChK2w1PZM=
-github.com/cellargalaxy/go_common v0.0.0-20220706164549-5bf0dc666216 h1:nR9x7ji70a8jFURfjeIS2d8xg/AVvdeLo5JMIIc0ofE=
-github.com/cellargalaxy/go_common v0.0.0-20220706164549-5bf0dc666216/go.mod h1:TA6nb4Am0/LKF17rHnxhvfJfjOben7dHcDChK2w1PZM=
 github.com/cellargalaxy/go_common v0.0.0-20220706170024-cfe104e42b48 h1:xPW+8a19jgUS/POZDSFuEZUN841xEuGq2xVyXCEPX48=
 github.com/cellargalaxy/go_common v0.0.0-20220706170024-cfe104e42b48/go.mod h1:TA6nb4Am0/LKF17rHnxhvfJfjOben7dHcDChK2w1PZM=
+github.com/cellargalaxy/go_common v0.0.0-20220708124856-536bad61ffef h1:M7q2Z7ngsee7nILXQProTK5YIHRTaleruJspO6qSggg=
+github.com/cellargalaxy/go_common v0.0.0-20220708124856-536bad61ffef/go.mod h1:TA6nb4Am0/LKF17rHnxhvfJfjOben7dHcDChK2w1PZM=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

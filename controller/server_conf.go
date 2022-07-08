@@ -14,7 +14,7 @@ func addServerConf(ctx *gin.Context) {
 	err := ctx.BindJSON(&request)
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("插入服务配置，请求参数解析异常")
-		ctx.JSON(http.StatusOK, util.CreateErrResponse(err.Error()))
+		ctx.JSON(http.StatusOK, util.CreateResponseByErr(err))
 		return
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("插入服务配置")
@@ -26,7 +26,7 @@ func removeServerConf(ctx *gin.Context) {
 	err := ctx.BindJSON(&request)
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request, "err": err}).Error("删除服务配置，请求参数解析异常")
-		ctx.JSON(http.StatusOK, util.CreateErrResponse(err.Error()))
+		ctx.JSON(http.StatusOK, util.CreateResponseByErr(err))
 		return
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request}).Info("删除服务配置")
@@ -38,7 +38,7 @@ func getLastServerConf(ctx *gin.Context) {
 	err := ctx.BindQuery(&request)
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request, "err": err}).Error("查询最新服务配置，请求参数解析异常")
-		ctx.JSON(http.StatusOK, util.CreateErrResponse(err.Error()))
+		ctx.JSON(http.StatusOK, util.CreateResponseByErr(err))
 		return
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request}).Info("查询最新服务配置")
@@ -50,7 +50,7 @@ func listServerConf(ctx *gin.Context) {
 	err := ctx.BindQuery(&request)
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request, "err": err}).Error("查询服务配置列表，请求参数解析异常")
-		ctx.JSON(http.StatusOK, util.CreateErrResponse(err.Error()))
+		ctx.JSON(http.StatusOK, util.CreateResponseByErr(err))
 		return
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request}).Info("查询服务配置列表")
@@ -62,7 +62,7 @@ func listAllServerName(ctx *gin.Context) {
 	err := ctx.BindQuery(&request)
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request, "err": err}).Error("查询服务配置列表，请求参数解析异常")
-		ctx.JSON(http.StatusOK, util.CreateErrResponse(err.Error()))
+		ctx.JSON(http.StatusOK, util.CreateResponseByErr(err))
 		return
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"request": request}).Info("查询服务配置列表")

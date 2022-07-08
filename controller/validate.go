@@ -7,8 +7,8 @@ import (
 )
 
 func claims(ctx *gin.Context) {
-	util.HttpClaims(ctx, config.Config.Secret)
+	util.ClaimsHttp(ctx, config.Config.Secret)
 }
 func validate(ctx *gin.Context) {
-	util.HttpValidate(ctx, config.Config.Secret)
+	util.ValidateHttp(ctx, config.Config.Secret)
 }

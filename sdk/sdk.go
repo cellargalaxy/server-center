@@ -89,7 +89,7 @@ func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，ServerName为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，ServerName为空")
 	}
-	httpClient := util.HttpClientNotReTry
+	httpClient := util.HttpClientNotRetry
 	client := &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}
 	client.conf.Version = math.MinInt32
 	return client, nil
