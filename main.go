@@ -3,11 +3,14 @@ package main
 import (
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/controller"
+	"github.com/cellargalaxy/server_center/corn"
 	"github.com/cellargalaxy/server_center/model"
 )
 
 func init() {
+	ctx := util.GenCtx()
 	util.Init(model.DefaultServerName)
+	corn.Init(ctx)
 }
 
 /**
