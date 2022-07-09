@@ -30,8 +30,12 @@ func GetEnvServerCenterAddress(ctx context.Context) string {
 func GetEnvServerCenterSecret(ctx context.Context) string {
 	return util.GetEnvString(ServerCenterSecretEnvKey, "")
 }
-func GetEnvServerName(ctx context.Context) string {
-	return util.GetServerName()
+func GetEnvServerName(ctx context.Context, defaultServerName string) string {
+	serverName := util.GetServerName()
+	if serverName == "" {
+		serverName = defaultServerName
+	}
+	return serverName
 }
 
 type ServerCenterHandlerInter interface {
@@ -140,6 +144,10 @@ func (this *ServerCenterClient) getLocalFileServerConf(ctx context.Context) (*mo
 	if err != nil {
 		return nil, err
 	}
+	if filePath == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("查询本地文件服务配置，filePath为空")
+		return nil, nil
+	}
 	confText, err := util.ReadFileWithString(ctx, filePath, "")
 	if err != nil {
 		return nil, err
@@ -159,10 +167,19 @@ func (this *ServerCenterClient) saveLocalFileServerConf(ctx context.Context, con
 	if err != nil {
 		return err
 	}
+	if filePath == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("保存本地文件服务配置，filePath为空")
+		return nil
+	}
 	return util.WriteFileWithString(ctx, filePath, confText)
 }
 func (this *ServerCenterClient) getLocalFilePath(ctx context.Context) (string, error) {
-	filePath := "resource/" + this.handler.GetServerName(ctx) + ".yml"
+	serverName := this.handler.GetServerName(ctx)
+	if serverName == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("查询本地文件服务配置，serverName为空")
+		return "", nil
+	}
+	filePath := "resource/" + serverName + ".yml"
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"filePath": filePath}).Info("查询本地文件服务配置")
 	return filePath, nil
 }
@@ -170,6 +187,10 @@ func (this *ServerCenterClient) GetRemoteLastServerConf(ctx context.Context) (*m
 	return this.GetRemoteLastServerConfByServerName(ctx, this.handler.GetServerName(ctx))
 }
 func (this *ServerCenterClient) GetRemoteLastServerConfByServerName(ctx context.Context, serverName string) (*model.ServerConfModel, error) {
+	if serverName == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("查询最新服务配置，serverName为空")
+		return nil, nil
+	}
 	var jsonString string
 	var object *model.ServerConfModel
 	var err error
@@ -237,7 +258,12 @@ func (this *ServerCenterClient) ListAllServerName(ctx context.Context) ([]string
 	return this.ListLocalAllServerName(ctx)
 }
 func (this *ServerCenterClient) ListLocalAllServerName(ctx context.Context) ([]string, error) {
-	return []string{this.handler.GetServerName(ctx)}, nil
+	list := make([]string, 0, 1)
+	serverName := this.handler.GetServerName(ctx)
+	if serverName != "" {
+		list = append(list, serverName)
+	}
+	return list, nil
 }
 func (this *ServerCenterClient) ListRemoteAllServerName(ctx context.Context) ([]string, error) {
 	var jsonString string

@@ -6,5 +6,5 @@ import (
 )
 
 func init() {
-	util.InitDefaultLog(model.DefaultServerName)
+	util.Init(model.DefaultServerName)
 }

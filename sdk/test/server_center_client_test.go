@@ -15,23 +15,21 @@ export server_name=server_center
 export server_center_address=http://127.0.0.1:7557
 export server_center_secret=secret_secret
 
-server_name=server_center;server_center_address=http://127.0.0.1:7557;server_center_secret=secret_secret
+server_name=server_center;server_center_address=http://127.0.0.1:7557;server_center_secret=secret
 */
 
 type ServerCenterHandler struct {
+	sdk.ServerCenterDefaultHandler
 }
 
-func (this *ServerCenterHandler) GetAddress(ctx context.Context) string {
-	return sdk.GetEnvServerCenterAddress(ctx)
+func (this *ServerCenterHandler) ListAddress(ctx context.Context) []string {
+	return []string{"http://127.0.0.1:7557"}
 }
 func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
-	return sdk.GetEnvServerCenterSecret(ctx)
+	return "secret"
 }
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
-	return sdk.GetEnvServerName(ctx)
-}
-func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
-	return 5 * time.Second
+	return model.DefaultServerName
 }
 func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
 	fmt.Printf("解析配置: \n%+v\n", object.ConfText)
@@ -63,11 +61,14 @@ func TestStartConfWithInitConf(test *testing.T) {
 		test.Error(err)
 		test.FailNow()
 	}
-	response, err := client.StartConfWithInitConf(ctx)
-	test.Logf("response: %+v\r\n", util.ToJsonIndentString(response))
-	if err != nil {
-		test.Error(err)
-		test.FailNow()
-	}
+	client.StartConfWithInitConf(ctx)
 	time.Sleep(time.Hour)
+}
+
+func TestAddEvent(test *testing.T) {
+	for i := 0; i < 1000000; i++ {
+		ctx := util.GenCtx()
+		sdk.AddEvent(ctx, "group", "name", 123, "data")
+	}
+	time.Sleep(time.Second * 3)
 }

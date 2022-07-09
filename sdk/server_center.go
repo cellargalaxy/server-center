@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"fmt"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
@@ -45,12 +46,12 @@ func GetSecret(ctx context.Context) string {
 func AddEvent(ctx context.Context, group, name string, value float64, data interface{}) {
 	var event model.Event
 	event.LogId = util.GetLogId(ctx)
-	event.ServerName = GetEnvServerName(ctx)
+	event.ServerName = GetEnvServerName(ctx, "")
 	event.Ip = util.GetIp()
 	event.EventGroup = group
 	event.EventName = name
 	event.Value = value
-	event.Data = util.ToJsonString(data)
+	event.Data = fmt.Sprint(data)
 	AddEventAsync(ctx, event)
 }
 func AddEventAsync(ctx context.Context, event model.Event) {
@@ -116,7 +117,7 @@ func (this *ServerCenterDefaultHandler) GetSecret(ctx context.Context) string {
 	return GetSecret(ctx)
 }
 func (this *ServerCenterDefaultHandler) GetInterval(ctx context.Context) time.Duration {
-	intervals := []time.Duration{time.Second * 10, time.Second * 10, time.Second * 10, time.Minute * 10}
+	intervals := []time.Duration{time.Second * 2, time.Second * 4, time.Second * 8, time.Second * 16, time.Second * 32, time.Minute * 10}
 	index := this.intervalIndex % len(intervals)
 	this.intervalIndex = this.intervalIndex + 1
 	return intervals[index]

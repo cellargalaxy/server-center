@@ -35,7 +35,7 @@ type ServerCenterHandler struct {
 }
 
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
-	return sdk.GetEnvServerName(ctx)
+	return sdk.GetEnvServerName(ctx, model.DefaultServerName)
 }
 func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
 	var config model.Config
