@@ -1,7 +1,6 @@
 package corn
 
 import (
-	"context"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/config"
 	"github.com/cellargalaxy/server_center/service/service"
@@ -9,7 +8,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Init(ctx context.Context) {
+func init() {
+	ctx := util.GenCtx()
+
 	cronObject := cron.New()
 
 	if config.Config.PullSyncCron != "" {
