@@ -39,20 +39,29 @@ func GetSecret(ctx context.Context) string {
 	return secret
 }
 
-type ServerCenterHandler struct {
+type ServerCenterDefaultHandler struct {
+	intervalIndex int
 }
 
-func (this *ServerCenterHandler) ListAddress(ctx context.Context) []string {
+func (this *ServerCenterDefaultHandler) ListAddress(ctx context.Context) []string {
 	return ListAddress(ctx)
 }
-func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
+func (this *ServerCenterDefaultHandler) GetSecret(ctx context.Context) string {
 	return GetSecret(ctx)
 }
+func (this *ServerCenterDefaultHandler) GetInterval(ctx context.Context) time.Duration {
+	intervals := []time.Duration{time.Second * 10, time.Second * 10, time.Second * 10, time.Minute * 10}
+	index := this.intervalIndex & len(intervals)
+	this.intervalIndex = this.intervalIndex + 1
+	return intervals[index]
+}
+
+type ServerCenterHandler struct {
+	ServerCenterDefaultHandler
+}
+
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
 	return model.DefaultServerName
-}
-func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
-	return time.Minute * 5
 }
 func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
 	var config model.Config

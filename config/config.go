@@ -6,7 +6,6 @@ import (
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/cellargalaxy/server_center/sdk"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 var Config = model.Config{}
@@ -32,19 +31,11 @@ func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config
 }
 
 type ServerCenterHandler struct {
+	sdk.ServerCenterDefaultHandler
 }
 
-func (this *ServerCenterHandler) ListAddress(ctx context.Context) []string {
-	return sdk.ListAddress(ctx)
-}
-func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
-	return sdk.GetSecret(ctx)
-}
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
 	return sdk.GetEnvServerName(ctx, model.DefaultServerName)
-}
-func (this *ServerCenterHandler) GetInterval(ctx context.Context) time.Duration {
-	return time.Minute * 5
 }
 func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.ServerConfModel) error {
 	var config model.Config
