@@ -51,7 +51,7 @@ func (this *ServerCenterDefaultHandler) GetSecret(ctx context.Context) string {
 }
 func (this *ServerCenterDefaultHandler) GetInterval(ctx context.Context) time.Duration {
 	intervals := []time.Duration{time.Second * 10, time.Second * 10, time.Second * 10, time.Minute * 10}
-	index := this.intervalIndex & len(intervals)
+	index := this.intervalIndex % len(intervals)
 	this.intervalIndex = this.intervalIndex + 1
 	return intervals[index]
 }
