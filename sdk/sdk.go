@@ -19,21 +19,9 @@ const (
 	serverCenterSecretEnvKey  = "server_center_secret"
 )
 
-var serverCenterClient *ServerCenterClient
-
 func init() {
 	ctx := util.GenCtx()
-	var err error
-
-	var handler ServerCenterHandler
-	serverCenterClient, err = NewDefaultServerCenterClient(ctx, &handler)
-	if err != nil {
-		panic(err)
-	}
-	if serverCenterClient == nil {
-		panic("创建serverCenterClient为空")
-	}
-	serverCenterClient.StartConfWithInitConf(ctx)
+	initServerCenter(ctx)
 }
 
 func GetEnvServerCenterAddress(ctx context.Context) string {
@@ -47,7 +35,7 @@ func GetEnvServerName(ctx context.Context, defaultServerName string) string {
 }
 
 type ServerCenterHandlerInter interface {
-	GetAddress(ctx context.Context) string
+	ListAddress(ctx context.Context) []string
 	GetSecret(ctx context.Context) string
 	GetServerName(ctx context.Context) string
 	GetInterval(ctx context.Context) time.Duration
@@ -110,8 +98,14 @@ func (this *ServerCenterClient) startConfAsync() {
 		}
 	}()
 }
+
+var confLock sync.Mutex
+
 func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	object, err := this.GetLastServerConf(ctx)
+	confLock.Lock()
+	defer confLock.Unlock()
+
+	object, err := this.getLastServerConf(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -131,18 +125,17 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 	this.saveLocalFileServerConf(ctx, this.conf.ConfText)
 	return object, nil
 }
-
-func (this *ServerCenterClient) GetLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
-	if this.handler.GetAddress(ctx) == "" {
-		return this.GetLocalFileServerConf(ctx)
+func (this *ServerCenterClient) getLastServerConf(ctx context.Context) (*model.ServerConfModel, error) {
+	if this.getAddress(ctx) == "" {
+		return this.getLocalFileServerConf(ctx)
 	}
 	object, err := this.GetRemoteLastServerConf(ctx)
 	if err == nil {
 		return object, nil
 	}
-	return this.GetLocalFileServerConf(ctx)
+	return this.getLocalFileServerConf(ctx)
 }
-func (this *ServerCenterClient) GetLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
+func (this *ServerCenterClient) getLocalFileServerConf(ctx context.Context) (*model.ServerConfModel, error) {
 	filePath, err := this.getLocalFilePath(ctx)
 	if err != nil {
 		return nil, err
@@ -234,7 +227,7 @@ func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, se
 }
 
 func (this *ServerCenterClient) ListAllServerName(ctx context.Context) ([]string, error) {
-	if this.handler.GetAddress(ctx) == "" {
+	if this.getAddress(ctx) == "" {
 		return this.ListLocalAllServerName(ctx)
 	}
 	object, err := this.ListRemoteAllServerName(ctx)
@@ -302,6 +295,17 @@ func (this *ServerCenterClient) requestListAllServerName(ctx context.Context) (s
 	return body, nil
 }
 
+func (this *ServerCenterClient) PingCheckAddress(ctx context.Context, addresses []string) []string {
+	list := make([]string, 0, len(addresses))
+	for i := range addresses {
+		_, err := this.Ping(ctx, addresses[i])
+		if err != nil {
+			continue
+		}
+		list = append(list, addresses[i])
+	}
+	return list
+}
 func (this *ServerCenterClient) Ping(ctx context.Context, address string) (*common_model.PingResponse, error) {
 	var jsonString string
 	var object *common_model.PingResponse
@@ -359,7 +363,7 @@ func (this *ServerCenterClient) requestPing(ctx context.Context, address string)
 }
 
 func (this *ServerCenterClient) GetUrl(ctx context.Context, path string) string {
-	return this.getUrl(ctx, this.handler.GetAddress(ctx), path)
+	return this.getUrl(ctx, this.getAddress(ctx), path)
 }
 func (this *ServerCenterClient) getUrl(ctx context.Context, address, path string) string {
 	if strings.HasSuffix(address, "/") && strings.HasPrefix(path, "/") && len(path) > 0 {
@@ -367,7 +371,15 @@ func (this *ServerCenterClient) getUrl(ctx context.Context, address, path string
 	}
 	return address + path
 }
-
+func (this *ServerCenterClient) getAddress(ctx context.Context) string {
+	list := this.handler.ListAddress(ctx)
+	if len(list) == 0 {
+		return ""
+	}
+	logId := util.GetLogId(ctx)
+	index := int(logId) % len(list)
+	return list[index]
+}
 func (this *ServerCenterClient) genJWT(ctx context.Context) (string, string) {
 	return util.GenAuthorizationJWT(ctx, this.timeout, this.handler.GetSecret(ctx))
 }

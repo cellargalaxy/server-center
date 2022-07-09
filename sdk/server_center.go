@@ -2,21 +2,51 @@ package sdk
 
 import (
 	"context"
-	"fmt"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
 	"time"
 )
 
+var serverCenterClient *ServerCenterClient
+var addresses []string
+var secret string
+
+func initServerCenter(ctx context.Context) {
+	var err error
+
+	address := GetEnvServerCenterAddress(ctx)
+	if address != "" {
+		addresses = append(addresses, address)
+	}
+	secret = GetEnvServerCenterSecret(ctx)
+
+	var handler ServerCenterHandler
+	serverCenterClient, err = NewDefaultServerCenterClient(ctx, &handler)
+	if err != nil {
+		panic(err)
+	}
+	if serverCenterClient == nil {
+		panic("创建serverCenterClient为空")
+	}
+	serverCenterClient.StartConfWithInitConf(ctx)
+}
+
+func ListAddress(ctx context.Context) []string {
+	return addresses
+}
+func GetSecret(ctx context.Context) string {
+	return secret
+}
+
 type ServerCenterHandler struct {
 }
 
-func (this *ServerCenterHandler) GetAddress(ctx context.Context) string {
-	return GetEnvServerCenterAddress(ctx)
+func (this *ServerCenterHandler) ListAddress(ctx context.Context) []string {
+	return ListAddress(ctx)
 }
 func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
-	return GetEnvServerCenterSecret(ctx)
+	return GetSecret(ctx)
 }
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
 	return model.DefaultServerName
@@ -36,28 +66,9 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 	list := addresses
 	list = append(list, config.Addresses...)
 	list = util.DistinctString(ctx, list)
-
-	local := "http://127.0.0.1" + model.ListenAddress
-	ls := make([]string, 0, len(list))
-	for i := range list {
-		if list[i] == "" || list[i] == local {
-			continue
-		}
-		_, err = serverCenterClient.Ping(ctx, list[i])
-		if err != nil {
-			continue
-		}
-		ls = append(ls, list[i])
-	}
-	if this.GetServerName(ctx) == GetEnvServerName(ctx, this.GetServerName(ctx)) {
-		ls = append(ls, local)
-	}
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"ls": ls}).Info("加载server_center地址")
-	if len(ls) == 0 {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("server_center地址为空")
-		return fmt.Errorf("server_center地址为空")
-	}
-	addresses = ls
+	list = serverCenterClient.PingCheckAddress(ctx, list)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"list": list}).Info("加载server_center地址")
+	addresses = list
 	return nil
 }
 func (this *ServerCenterHandler) GetDefaultConf(ctx context.Context) string {

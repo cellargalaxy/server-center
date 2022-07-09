@@ -34,6 +34,12 @@ func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config
 type ServerCenterHandler struct {
 }
 
+func (this *ServerCenterHandler) ListAddress(ctx context.Context) []string {
+	return sdk.ListAddress(ctx)
+}
+func (this *ServerCenterHandler) GetSecret(ctx context.Context) string {
+	return sdk.GetSecret(ctx)
+}
 func (this *ServerCenterHandler) GetServerName(ctx context.Context) string {
 	return sdk.GetEnvServerName(ctx, model.DefaultServerName)
 }

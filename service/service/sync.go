@@ -15,14 +15,14 @@ type PullSyncHandler struct {
 	secret  string
 }
 
-func (this *PullSyncHandler) GetAddress(ctx context.Context) string {
-	return this.address
+func (this *PullSyncHandler) ListAddress(ctx context.Context) []string {
+	return []string{this.address}
 }
 func (this *PullSyncHandler) GetSecret(ctx context.Context) string {
 	return this.secret
 }
 func (this *PullSyncHandler) GetServerName(ctx context.Context) string {
-	return "server_center"
+	return model.DefaultServerName
 }
 func (this *PullSyncHandler) GetInterval(ctx context.Context) time.Duration {
 	return 5 * time.Minute
