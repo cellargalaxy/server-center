@@ -17,6 +17,7 @@ func InsertServerConf(ctx context.Context, object model.ServerConfModel) (model.
 	}
 	return object, nil
 }
+
 func whereServerConf(ctx context.Context, where *gorm.DB, inquiry model.ServerConfInquiry) *gorm.DB {
 	if inquiry.Id > 0 {
 		where = getWhere(ctx, where).Where("id = ?", inquiry.Id)

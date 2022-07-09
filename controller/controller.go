@@ -25,6 +25,7 @@ func Controller() error {
 	engine.GET(model.GetLastServerConfPath, validate, getLastServerConf)
 	engine.GET(model.ListServerConfPath, validate, listServerConf)
 	engine.GET(model.ListAllServerNamePath, validate, listAllServerName)
+	engine.POST(model.AddEventPath, validate, addEvent)
 
 	err := engine.Run(model.ListenAddress)
 	if err != nil {

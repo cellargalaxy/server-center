@@ -12,3 +12,26 @@ create table `server_conf`
 ) engine = InnoDB
   default charset = utf8mb4
   collate = utf8mb4_unicode_ci;
+
+
+CREATE TABLE `event`
+(
+    `id`          int(11)     NOT NULL AUTO_INCREMENT,
+    `log_id`      bigint(20)  NOT NULL DEFAULT 0 COMMENT '',
+    `server_name` varchar(64) NOT NULL DEFAULT '' COMMENT '',
+    `ip`          varchar(16) NOT NULL DEFAULT '' COMMENT '',
+    `event_group` varchar(64) NOT NULL DEFAULT '' COMMENT '',
+    `event_name`  varchar(64) NOT NULL DEFAULT '' COMMENT '',
+    `value`       double      NOT NULL DEFAULT 0 COMMENT '',
+    `data`        text        NOT NULL DEFAULT '' COMMENT '',
+    `created_at`  datetime    NOT NULL,
+    `updated_at`  datetime    NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_log_id` (`log_id`) USING BTREE,
+    KEY `idx_server_name` (`server_name`) USING BTREE,
+    KEY `idx_event_group` (`event_group`) USING BTREE,
+    KEY `idx_event_name` (`event_name`) USING BTREE,
+    KEY `idx_created_at` (`created_at`) USING BTREE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;

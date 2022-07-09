@@ -13,6 +13,7 @@ const (
 	GetLastServerConfPath = "/api/getLastServerConf"
 	ListServerConfPath    = "/api/listServerConf"
 	ListAllServerNamePath = "/api/listAllServerName"
+	AddEventPath          = "/api/addEvent"
 )
 
 type Config struct {
@@ -24,6 +25,8 @@ type Config struct {
 	PullSyncCron   string `yaml:"pull_sync_cron" json:"pull_sync_cron"`
 	PullSyncHost   string `yaml:"pull_sync_host" json:"pull_sync_host"`
 	PullSyncSecret string `yaml:"pull_sync_secret" json:"-"`
+
+	ClearEventCron string `yaml:"clear_event_cron" json:"clear_event_cron"`
 }
 
 func (this Config) String() string {

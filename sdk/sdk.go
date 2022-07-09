@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	serverCenterAddressEnvKey = "server_center_address"
-	serverCenterSecretEnvKey  = "server_center_secret"
+	ServerCenterAddressEnvKey = "server_center_address"
+	ServerCenterSecretEnvKey  = "server_center_secret"
 )
 
 func init() {
@@ -25,13 +25,13 @@ func init() {
 }
 
 func GetEnvServerCenterAddress(ctx context.Context) string {
-	return util.GetEnvString(serverCenterAddressEnvKey, "")
+	return util.GetEnvString(ServerCenterAddressEnvKey, "")
 }
 func GetEnvServerCenterSecret(ctx context.Context) string {
-	return util.GetEnvString(serverCenterSecretEnvKey, "")
+	return util.GetEnvString(ServerCenterSecretEnvKey, "")
 }
-func GetEnvServerName(ctx context.Context, defaultServerName string) string {
-	return util.GetServerName(defaultServerName)
+func GetEnvServerName(ctx context.Context) string {
+	return util.GetServerName()
 }
 
 type ServerCenterHandlerInter interface {
@@ -291,6 +291,65 @@ func (this *ServerCenterClient) requestListAllServerName(ctx context.Context) (s
 	if statusCode != http.StatusOK {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("查询服务配置列表，响应码失败")
 		return "", fmt.Errorf("查询服务配置列表，响应码失败: %+v", statusCode)
+	}
+	return body, nil
+}
+
+func (this *ServerCenterClient) AddEvent(ctx context.Context, object []model.Event) error {
+	ctx = util.SetReqId(ctx)
+	var jsonString string
+	var err error
+	for i := 0; i < this.retry; i++ {
+		jsonString, err = this.requestAddEvent(ctx, object)
+		if err == nil {
+			err = this.analysisAddEvent(ctx, jsonString)
+			if err == nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+func (this *ServerCenterClient) analysisAddEvent(ctx context.Context, jsonString string) error {
+	type Response struct {
+		Code int                    `json:"code"`
+		Msg  string                 `json:"msg"`
+		Data model.AddEventResponse `json:"data"`
+	}
+	var response Response
+	err := util.UnmarshalJsonString(jsonString, &response)
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("插入批量事件，解析响应异常")
+		return fmt.Errorf("插入批量事件，解析响应异常")
+	}
+	if response.Code != util.HttpSuccessCode {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("插入批量事件，失败")
+		return fmt.Errorf("插入批量事件，失败")
+	}
+	return nil
+}
+func (this *ServerCenterClient) requestAddEvent(ctx context.Context, object []model.Event) (string, error) {
+	var req model.AddEventRequest
+	req.List = object
+	response, err := this.httpClient.R().SetContext(ctx).
+		SetHeader(this.genJWT(ctx)).
+		SetBody(req).
+		Post(this.GetUrl(ctx, model.AddEventPath))
+
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("插入批量事件，请求异常")
+		return "", fmt.Errorf("插入批量事件，请求异常")
+	}
+	if response == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("插入批量事件，响应为空")
+		return "", fmt.Errorf("插入批量事件，响应为空")
+	}
+	statusCode := response.StatusCode()
+	body := response.String()
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "body": body}).Info("插入批量事件，响应")
+	if statusCode != http.StatusOK {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("插入批量事件，响应码失败")
+		return "", fmt.Errorf("插入批量事件，响应码失败: %+v", statusCode)
 	}
 	return body, nil
 }

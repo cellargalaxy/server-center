@@ -35,7 +35,7 @@ func init() {
 	// SetMaxIdleConns 设置空闲连接池中连接的最大数量
 	sqlDB.SetMaxIdleConns(1)
 	// SetMaxOpenConns 设置打开数据库连接的最大数量。
-	sqlDB.SetMaxOpenConns(8)
+	sqlDB.SetMaxOpenConns(2)
 	// SetConnMaxLifetime 设置了连接可复用的最大时间。
 	sqlDB.SetConnMaxLifetime(time.Hour)
 }
@@ -55,6 +55,7 @@ func initDb(dbConfig *gorm.Config) (*gorm.DB, error) {
 		return db, err
 	}
 	err = db.AutoMigrate(&model.ServerConfModel{})
+	err = db.AutoMigrate(&model.EventModel{})
 	return db, err
 }
 
