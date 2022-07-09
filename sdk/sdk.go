@@ -121,6 +121,9 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 	if object.Version <= this.conf.Version {
 		return nil, nil
 	}
+	if object.ConfText == this.conf.ConfText {
+		return nil, nil
+	}
 	err = this.handler.ParseConf(ctx, *object)
 	if err != nil {
 		return object, err
