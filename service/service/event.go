@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"github.com/cellargalaxy/go_common/util"
+	"github.com/cellargalaxy/server_center/config"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/cellargalaxy/server_center/service/db"
 	"github.com/sirupsen/logrus"
 )
-
-const oldEventOffset = 100000000
 
 func initEvent(ctx context.Context) {
 	flushEventSync()
@@ -71,7 +70,7 @@ func flushEvent(ctx context.Context) {
 
 func GetOldEvent(ctx context.Context) (*model.EventModel, error) {
 	var inquiry model.EventInquiry
-	inquiry.Offset = oldEventOffset
+	inquiry.Offset = config.Config.EventMaxSave
 	inquiry.Limit = 1
 	object, err := db.ListEvent(ctx, inquiry)
 	if err != nil {

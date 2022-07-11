@@ -26,6 +26,7 @@ type Config struct {
 	PullSyncHost   string `yaml:"pull_sync_host" json:"pull_sync_host"`
 	PullSyncSecret string `yaml:"pull_sync_secret" json:"-"`
 
+	EventMaxSave   int    `yaml:"event_max_save" json:"event_max_save"`
 	ClearEventCron string `yaml:"clear_event_cron" json:"clear_event_cron"`
 }
 

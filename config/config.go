@@ -27,6 +27,9 @@ func init() {
 }
 
 func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config, error) {
+	if config.EventMaxSave <= 0 {
+		config.EventMaxSave = 1000000
+	}
 	return config, nil
 }
 
