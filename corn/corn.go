@@ -20,7 +20,7 @@ func Init(ctx context.Context) {
 		if err != nil {
 			panic(err)
 		}
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"corn": job, "entryId": entryId}).Info("定时任务，添加定时")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"pullSyncJob": job, "entryId": entryId}).Info("定时任务，添加定时")
 	}
 
 	if config.Config.ClearEventCron != "" {
@@ -29,7 +29,16 @@ func Init(ctx context.Context) {
 		if err != nil {
 			panic(err)
 		}
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"corn": job, "entryId": entryId}).Info("定时任务，添加定时")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"clearEventJob": job, "entryId": entryId}).Info("定时任务，添加定时")
+	}
+
+	if config.Config.ClearConfigCron != "" {
+		var job clearConfigJob
+		entryId, err := cronObject.AddJob(config.Config.ClearConfigCron, &job)
+		if err != nil {
+			panic(err)
+		}
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"clearConfigJob": job, "entryId": entryId}).Info("定时任务，添加定时")
 	}
 
 	cronObject.Start()
@@ -64,4 +73,18 @@ func (this *clearEventJob) Run() {
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"clearEventJob": this}).Info("定时任务，执行任务开始")
 	service.ClearEvent(ctx)
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"clearEventJob": this}).Info("定时任务，执行任务完成")
+}
+
+type clearConfigJob struct {
+}
+
+func (this clearConfigJob) String() string {
+	return util.ToJsonString(this)
+}
+
+func (this *clearConfigJob) Run() {
+	ctx := util.GenCtx()
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"clearConfigJob": this}).Info("定时任务，执行任务开始")
+	service.ClearConfig(ctx)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"clearConfigJob": this}).Info("定时任务，执行任务完成")
 }

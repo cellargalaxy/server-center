@@ -22,6 +22,9 @@ type Config struct {
 	Addresses []string `yaml:"addresses" json:"addresses"`
 	Secret    string   `yaml:"secret" json:"-"`
 
+	ConfigMaxSave   int    `yaml:"config_max_save" json:"config_max_save"`
+	ClearConfigCron string `yaml:"clear_config_cron" json:"clear_config_cron"`
+
 	PullSyncCron   string `yaml:"pull_sync_cron" json:"pull_sync_cron"`
 	PullSyncHost   string `yaml:"pull_sync_host" json:"pull_sync_host"`
 	PullSyncSecret string `yaml:"pull_sync_secret" json:"-"`

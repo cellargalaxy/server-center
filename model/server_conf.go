@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/cellargalaxy/go_common/model"
 	"github.com/cellargalaxy/go_common/util"
+	"time"
 )
 
 type ServerConf struct {
@@ -31,9 +32,10 @@ func (ServerConfModel) TableName() string {
 
 type ServerConfInquiry struct {
 	ServerConfModel
-	StartVersion int `json:"start_version" form:"start_version" query:"start_version"`
-	Offset       int `json:"offset" form:"offset" query:"offset"`
-	Limit        int `json:"limit" form:"limit" query:"limit"`
+	StartVersion int       `json:"start_version" form:"start_version" query:"start_version"`
+	EndCreatedAt time.Time `json:"end_created_at" form:"end_created_at" query:"end_created_at"`
+	Offset       int       `json:"offset" form:"offset" query:"offset"`
+	Limit        int       `json:"limit" form:"limit" query:"limit"`
 }
 
 func (this ServerConfInquiry) String() string {
