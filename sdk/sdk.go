@@ -57,15 +57,14 @@ type ServerCenterClient struct {
 }
 
 func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
-	return NewServerCenterClient(ctx, util.TimeoutDefault, util.RetryDefault, handler)
+	return NewServerCenterClient(ctx, util.TimeoutDefault, util.RetryDefault, util.GetHttpClient(), handler)
 }
 
-func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
+func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int, httpClient *resty.Client, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
 	if handler == nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
 	}
-	httpClient := util.GetHttpClient()
 	client := &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}
 	return client, nil
 }
