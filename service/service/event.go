@@ -68,9 +68,9 @@ func flushEvent(ctx context.Context) {
 	}
 }
 
-func GetOldEvent(ctx context.Context) (*model.EventModel, error) {
+func getOldEvent(ctx context.Context, maxSave int) (*model.EventModel, error) {
 	var inquiry model.EventInquiry
-	inquiry.Offset = config.Config.EventMaxSave
+	inquiry.Offset = maxSave
 	inquiry.Limit = 1
 	object, err := db.ListEvent(ctx, inquiry)
 	if err != nil {
@@ -79,16 +79,22 @@ func GetOldEvent(ctx context.Context) (*model.EventModel, error) {
 	if len(object) == 0 {
 		return nil, nil
 	}
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"object[0]": object[0]}).Info("查询旧事件")
 	return &object[0], nil
 }
 
 func ClearEvent(ctx context.Context) error {
-	object, err := GetOldEvent(ctx)
+	maxSave := config.Config.EventMaxSave
+	if maxSave <= 0 {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("清理旧事件，不进行清理")
+		return nil
+	}
+	object, err := getOldEvent(ctx, maxSave)
 	if err != nil {
 		return err
 	}
 	if object == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("删除旧事件，无旧事件")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("清理旧事件，无旧事件")
 		return nil
 	}
 	var inquiry model.EventInquiry

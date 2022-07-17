@@ -31,6 +31,9 @@ func whereServerConf(ctx context.Context, where *gorm.DB, inquiry model.ServerCo
 	if inquiry.StartVersion > 0 {
 		where = getWhere(ctx, where).Where("version >= ?", inquiry.StartVersion)
 	}
+	if inquiry.EndCreatedAt.Unix() > 0 {
+		where = getWhere(ctx, where).Where("created_at < ?", inquiry.EndCreatedAt)
+	}
 	return where
 }
 

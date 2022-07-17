@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/cellargalaxy/server_center/sdk"
-	"github.com/cellargalaxy/server_center/service/db"
 	"github.com/sirupsen/logrus"
 	"time"
 )
@@ -55,7 +54,7 @@ func PullSync(ctx context.Context, address, secret string) error {
 		if conf == nil || err != nil {
 			continue
 		}
-		db.AddServerConf(ctx, conf.ServerConf)
+		AddServerConf(ctx, conf.ServerConf)
 	}
 	return nil
 }

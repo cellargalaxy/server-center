@@ -47,8 +47,7 @@ func ListServerConf(ctx context.Context, inquiry model.ServerConfInquiry) ([]mod
 	return list, err
 }
 
-func ListAllServerName(ctx context.Context) ([]string, error) {
-	var inquiry model.ServerConfInquiry
+func ListServerName(ctx context.Context, inquiry model.ServerConfInquiry) ([]string, error) {
 	list, err := db.SelectServerConfDistinctServerName(ctx, inquiry)
 	return list, err
 }
