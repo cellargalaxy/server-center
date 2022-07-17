@@ -65,7 +65,7 @@ func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
 	}
-	httpClient := util.HttpClientNotRetry
+	httpClient := util.GetHttpClient()
 	client := &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}
 	return client, nil
 }
@@ -76,7 +76,7 @@ func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
 		if err == nil {
 			break
 		}
-		time.Sleep(util.WareDuration(time.Second))
+		util.SleepWare(ctx, time.Second)
 	}
 	this.StartServerCenter(ctx)
 }
@@ -91,14 +91,14 @@ func (this *ServerCenterClient) startConfAsync() {
 		ctx := util.GenCtx()
 		defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
 			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startConfAsync，结束")
-			time.Sleep(util.WareDuration(util.MaxDuration(this.handler.GetInterval(ctx), time.Minute*5)))
+			util.SleepWare(ctx, util.MaxDuration(this.handler.GetInterval(ctx), time.Minute*5))
 			this.startConfAsync()
 		})
 
 		for {
 			ctx := util.GenCtx()
 			this.GetAndParseLastServerConf(ctx)
-			time.Sleep(util.WareDuration(this.handler.GetInterval(ctx)))
+			util.SleepWare(ctx, this.handler.GetInterval(ctx))
 		}
 	}()
 }
