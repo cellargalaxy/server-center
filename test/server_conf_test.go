@@ -37,13 +37,3 @@ func TestListServerConf(test *testing.T) {
 		test.FailNow()
 	}
 }
-
-func TestListAllServerName(test *testing.T) {
-	ctx := util.GenCtx()
-	response, err := db.ListAllServerName(ctx)
-	test.Logf("response: %+v\r\n", util.ToJsonIndentString(response))
-	if err != nil {
-		test.Error(err)
-		test.FailNow()
-	}
-}

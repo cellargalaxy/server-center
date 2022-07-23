@@ -14,8 +14,6 @@ func Init(ctx context.Context) {
 
 	if config.Config.PullSyncCron != "" {
 		var job pullSyncJob
-		job.Address = config.Config.PullSyncHost
-		job.Secret = config.Config.PullSyncSecret
 		entryId, err := cronObject.AddJob(config.Config.PullSyncCron, &job)
 		if err != nil {
 			panic(err)
@@ -46,8 +44,6 @@ func Init(ctx context.Context) {
 }
 
 type pullSyncJob struct {
-	Address string `json:"address"`
-	Secret  string `json:"-"`
 }
 
 func (this pullSyncJob) String() string {
@@ -57,7 +53,7 @@ func (this pullSyncJob) String() string {
 func (this *pullSyncJob) Run() {
 	ctx := util.GenCtx()
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"pullSyncJob": this}).Info("定时任务，执行任务开始")
-	service.PullSync(ctx, this.Address, this.Secret)
+	service.PullSync(ctx)
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"pullSyncJob": this}).Info("定时任务，执行任务完成")
 }
 

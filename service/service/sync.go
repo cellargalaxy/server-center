@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/cellargalaxy/server_center/config"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/cellargalaxy/server_center/sdk"
 	"github.com/sirupsen/logrus"
@@ -10,15 +11,21 @@ import (
 )
 
 type PullSyncHandler struct {
-	address string
-	secret  string
 }
 
 func (this *PullSyncHandler) ListAddress(ctx context.Context) []string {
-	return []string{this.address}
+	pullSyncHost := config.Config.PullSyncHost
+	if pullSyncHost != "" {
+		return []string{pullSyncHost}
+	}
+	return sdk.ListAddress(ctx)
 }
 func (this *PullSyncHandler) GetSecret(ctx context.Context) string {
-	return this.secret
+	secret := config.Config.PullSyncSecret
+	if secret != "" {
+		return secret
+	}
+	return sdk.GetSecret(ctx)
 }
 func (this *PullSyncHandler) GetServerName(ctx context.Context) string {
 	return model.DefaultServerName
@@ -33,10 +40,8 @@ func (this *PullSyncHandler) GetDefaultConf(ctx context.Context) string {
 	return ""
 }
 
-func PullSync(ctx context.Context, address, secret string) error {
+func PullSync(ctx context.Context) error {
 	var handler PullSyncHandler
-	handler.address = address
-	handler.secret = secret
 	client, err := sdk.NewDefaultServerCenterClient(ctx, &handler)
 	if err != nil {
 		return err
