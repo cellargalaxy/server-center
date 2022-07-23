@@ -114,7 +114,7 @@ func getOldEvent(ctx context.Context, maxSave int) (*model.EventModel, error) {
 }
 
 func ClearEvent(ctx context.Context) error {
-	maxSave := config.Config.EventMaxSave
+	maxSave := config.Config.ClearEventSave
 	if maxSave <= 0 {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("清理旧事件，不进行清理")
 		return nil

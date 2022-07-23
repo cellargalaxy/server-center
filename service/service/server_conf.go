@@ -65,7 +65,7 @@ func listAllOldServerConf(ctx context.Context, maxSave int) ([]model.ServerConfM
 }
 
 func ClearConfig(ctx context.Context) error {
-	maxSave := config.Config.ConfigMaxSave
+	maxSave := config.Config.ClearConfigSave
 	if maxSave <= 0 {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("清理旧配置，不进行清理")
 		return nil
