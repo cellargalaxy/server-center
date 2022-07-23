@@ -154,6 +154,10 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 	secret = config.Secret
 
 	list := addresses
+	address := GetEnvServerCenterAddress(ctx)
+	if address != "" {
+		list = append(list, address)
+	}
 	list = append(list, config.Addresses...)
 	list = util.DistinctString(ctx, list)
 	list = client.PingCheckAddress(ctx, list)
