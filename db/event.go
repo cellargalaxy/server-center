@@ -50,11 +50,11 @@ func whereEvent(ctx context.Context, where *gorm.DB, inquiry model.EventInquiry)
 	if inquiry.Ip != "" {
 		where = getWhere(ctx, where).Where("ip = ?", inquiry.Ip)
 	}
-	if inquiry.EventGroup != "" {
-		where = getWhere(ctx, where).Where("event_group = ?", inquiry.EventGroup)
+	if inquiry.Group != "" {
+		where = getWhere(ctx, where).Where("event_group = ?", inquiry.Group)
 	}
-	if inquiry.EventName != "" {
-		where = getWhere(ctx, where).Where("event_name = ?", inquiry.EventName)
+	if inquiry.Name != "" {
+		where = getWhere(ctx, where).Where("event_name = ?", inquiry.Name)
 	}
 	if inquiry.EndCreatedAt.Unix() > 0 {
 		where = getWhere(ctx, where).Where("created_at < ?", inquiry.EndCreatedAt)

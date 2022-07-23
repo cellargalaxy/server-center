@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-var serverCenterClient *ServerCenterClient
 var addresses []string
 var secret string
-var eventChan = make(chan model.Event, 1000)
+var client *ServerCenterClient
+var eventChan = make(chan model.Event, util.DbMaxBatchAddLength)
 
 func initServerCenter(ctx context.Context) {
 	var err error
@@ -24,14 +24,14 @@ func initServerCenter(ctx context.Context) {
 	secret = GetEnvServerCenterSecret(ctx)
 
 	var handler ServerCenterHandler
-	serverCenterClient, err = NewDefaultServerCenterClient(ctx, &handler)
+	client, err = NewDefaultServerCenterClient(ctx, &handler)
 	if err != nil {
 		panic(err)
 	}
-	if serverCenterClient == nil {
+	if client == nil {
 		panic("创建serverCenterClient为空")
 	}
-	serverCenterClient.StartConfWithInitConf(ctx)
+	client.StartWithInitConf(ctx)
 
 	flushEventAsync(ctx)
 }
@@ -48,8 +48,8 @@ func AddEvent(ctx context.Context, group, name string, value float64, data inter
 	event.LogId = util.GetLogId(ctx)
 	event.ServerName = GetEnvServerName(ctx, "")
 	event.Ip = util.GetIp()
-	event.EventGroup = group
-	event.EventName = name
+	event.Group = group
+	event.Name = name
 	event.Value = value
 	event.Data = fmt.Sprint(data)
 	AddEventAsync(ctx, event)
@@ -79,29 +79,43 @@ func flushEventAsync(ctx context.Context) {
 }
 func flushEvent(ctx context.Context) {
 	list := make([]model.Event, 0, util.DbMaxBatchAddLength)
+
+	defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
+		if err != nil {
+			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Error("插入事件，异常")
+		}
+		if len(list) == 0 || client == nil {
+			return
+		}
+		client.AddEvent(ctx, list)
+	})
+
 	for {
+		ctx = util.ResetLogId(ctx)
 		select {
 		case event := <-eventChan:
 			list = append(list, event)
 			if len(list) < util.DbMaxBatchAddLength {
 				continue
 			}
-			if serverCenterClient == nil {
+			if client == nil {
 				logrus.WithContext(ctx).WithFields(logrus.Fields{"list": list}).Error("插入事件，serverCenterClient为空")
 			} else {
-				serverCenterClient.AddEvent(ctx, list)
+				client.AddEvent(ctx, list)
 			}
 			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
 		case <-time.After(time.Second):
 			if len(list) == 0 {
 				continue
 			}
-			if serverCenterClient == nil {
+			if client == nil {
 				logrus.WithContext(ctx).WithFields(logrus.Fields{"list": list}).Error("插入事件，serverCenterClient为空")
 			} else {
-				serverCenterClient.AddEvent(ctx, list)
+				client.AddEvent(ctx, list)
 			}
 			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
+		case <-ctx.Done():
+			return
 		}
 	}
 }
@@ -142,7 +156,7 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 	list := addresses
 	list = append(list, config.Addresses...)
 	list = util.DistinctString(ctx, list)
-	list = serverCenterClient.PingCheckAddress(ctx, list)
+	list = client.PingCheckAddress(ctx, list)
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"list": list}).Info("加载server_center地址")
 	addresses = list
 	return nil

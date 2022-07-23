@@ -7,13 +7,14 @@ import (
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/cellargalaxy/server_center/service/db"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 func initEvent(ctx context.Context) {
 	flushEventSync()
 }
 
-var eventChan = make(chan []model.Event, 1000)
+var eventChan = make(chan model.Event, util.DbMaxBatchAddLength)
 
 func AddEventsAsync(ctx context.Context, object []model.Event) {
 	go func() {
@@ -44,9 +45,9 @@ func AddEvents(ctx context.Context, object []model.Event) {
 			if object[i].LogId <= 0 {
 				object[i].LogId = claims.LogId
 			}
+			eventChan <- object[i]
 		}
 	}
-	eventChan <- object
 }
 
 func flushEventSync() {
@@ -62,9 +63,38 @@ func flushEventSync() {
 }
 
 func flushEvent(ctx context.Context) {
-	for events := range eventChan {
-		ctx = util.GenCtx()
-		db.AddManyEvent(ctx, events)
+	list := make([]model.Event, 0, util.DbMaxBatchAddLength)
+
+	defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
+		if err != nil {
+			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Error("刷入事件，异常")
+		}
+		if len(list) == 0 {
+			return
+		}
+		db.AddManyEvent(ctx, list)
+	})
+
+	for {
+		select {
+		case event := <-eventChan:
+			list = append(list, event)
+			if len(list) < util.DbMaxBatchAddLength {
+				continue
+			}
+			ctx = util.ResetLogId(ctx)
+			db.AddManyEvent(ctx, list)
+			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
+		case <-time.After(time.Second):
+			if len(list) == 0 {
+				continue
+			}
+			ctx = util.ResetLogId(ctx)
+			db.AddManyEvent(ctx, list)
+			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

@@ -61,7 +61,7 @@ func TestStartConfWithInitConf(test *testing.T) {
 		test.Error(err)
 		test.FailNow()
 	}
-	client.StartConfWithInitConf(ctx)
+	client.StartWithInitConf(ctx)
 	time.Sleep(time.Hour)
 }
 

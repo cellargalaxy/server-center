@@ -52,8 +52,9 @@ type ServerCenterClient struct {
 	retry      int
 	httpClient *resty.Client
 	handler    ServerCenterHandlerInter
-	conf       model.ServerConfModel
-	once       sync.Once
+
+	conf model.ServerConfModel
+	once sync.Once
 }
 
 func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
@@ -69,7 +70,7 @@ func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int
 	return client, nil
 }
 
-func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
+func (this *ServerCenterClient) StartWithInitConf(ctx context.Context) {
 	for {
 		_, err := this.GetAndParseLastServerConf(ctx)
 		if err == nil {
@@ -77,13 +78,12 @@ func (this *ServerCenterClient) StartConfWithInitConf(ctx context.Context) {
 		}
 		util.SleepWare(ctx, time.Second)
 	}
-	this.StartServerCenter(ctx)
+	this.Start(ctx)
 }
-func (this *ServerCenterClient) StartServerCenter(ctx context.Context) {
-	this.once.Do(this.startServerCenterAsync)
-}
-func (this *ServerCenterClient) startServerCenterAsync() {
-	this.startConfAsync()
+func (this *ServerCenterClient) Start(ctx context.Context) {
+	this.once.Do(func() {
+		this.startConfAsync()
+	})
 }
 func (this *ServerCenterClient) startConfAsync() {
 	go func() {
@@ -95,7 +95,7 @@ func (this *ServerCenterClient) startConfAsync() {
 		})
 
 		for {
-			ctx := util.GenCtx()
+			ctx = util.ResetLogId(ctx)
 			this.GetAndParseLastServerConf(ctx)
 			util.SleepWare(ctx, this.handler.GetInterval(ctx))
 		}
@@ -193,6 +193,7 @@ func (this *ServerCenterClient) GetRemoteLastServerConfByServerName(ctx context.
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("查询最新服务配置，serverName为空")
 		return nil, nil
 	}
+	ctx = util.RmReqId(ctx)
 	var jsonString string
 	var object *model.ServerConfModel
 	var err error
@@ -268,6 +269,7 @@ func (this *ServerCenterClient) ListLocalAllServerName(ctx context.Context) ([]s
 	return list, nil
 }
 func (this *ServerCenterClient) ListRemoteAllServerName(ctx context.Context) ([]string, error) {
+	ctx = util.RmReqId(ctx)
 	var jsonString string
 	var object []string
 	var err error
@@ -383,17 +385,36 @@ func (this *ServerCenterClient) requestAddEvent(ctx context.Context, object []mo
 }
 
 func (this *ServerCenterClient) PingCheckAddress(ctx context.Context, addresses []string) []string {
-	list := make([]string, 0, len(addresses))
+	listChan := make(chan string, len(addresses))
+	var wg sync.WaitGroup
 	for i := range addresses {
-		_, err := this.Ping(ctx, addresses[i])
-		if err != nil {
-			continue
-		}
-		list = append(list, addresses[i])
+		wg.Add(1)
+		go func(address string) {
+			defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
+				wg.Done()
+				if err != nil {
+					logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Info("ping，异常")
+				}
+			})
+
+			_, err := this.Ping(ctx, address)
+			if err != nil {
+				return
+			}
+			listChan <- address
+		}(addresses[i])
+	}
+	wg.Wait()
+
+	close(listChan)
+	list := make([]string, 0, len(listChan))
+	for address := range listChan {
+		list = append(list, address)
 	}
 	return list
 }
 func (this *ServerCenterClient) Ping(ctx context.Context, address string) (*common_model.PingResponse, error) {
+	ctx = util.RmReqId(ctx)
 	var jsonString string
 	var object *common_model.PingResponse
 	var err error

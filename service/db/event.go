@@ -27,11 +27,11 @@ func AddManyEvent(ctx context.Context, list []model.Event) {
 func addEvents(ctx context.Context, object []model.Event) error {
 	list := make([]model.EventModel, 0, len(object))
 	for i := range object {
-		if object[i].EventGroup == "" {
+		if object[i].Group == "" {
 			logrus.WithContext(ctx).WithFields(logrus.Fields{"object": object[i]}).Error("插入批量事件，EventGroup非法")
 			continue
 		}
-		if object[i].EventName == "" {
+		if object[i].Name == "" {
 			logrus.WithContext(ctx).WithFields(logrus.Fields{"object": object[i]}).Error("插入批量事件，EventName非法")
 			continue
 		}

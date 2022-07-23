@@ -20,8 +20,8 @@ CREATE TABLE `event`
     `log_id`      bigint(20)  NOT NULL DEFAULT 0 COMMENT '',
     `server_name` varchar(64) NOT NULL DEFAULT '' COMMENT '',
     `ip`          varchar(16) NOT NULL DEFAULT '' COMMENT '',
-    `event_group` varchar(64) NOT NULL DEFAULT '' COMMENT '',
-    `event_name`  varchar(64) NOT NULL DEFAULT '' COMMENT '',
+    `group`       varchar(64) NOT NULL DEFAULT '' COMMENT '',
+    `name`        varchar(64) NOT NULL DEFAULT '' COMMENT '',
     `value`       double      NOT NULL DEFAULT 0 COMMENT '',
     `data`        text        NOT NULL DEFAULT '' COMMENT '',
     `created_at`  datetime    NOT NULL,
@@ -29,8 +29,8 @@ CREATE TABLE `event`
     PRIMARY KEY (`id`),
     KEY `idx_log_id` (`log_id`) USING BTREE,
     KEY `idx_server_name` (`server_name`) USING BTREE,
-    KEY `idx_event_group` (`event_group`) USING BTREE,
-    KEY `idx_event_name` (`event_name`) USING BTREE,
+    KEY idx_group (`group`) USING BTREE,
+    KEY idx_name (`name`) USING BTREE,
     KEY `idx_created_at` (`created_at`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
