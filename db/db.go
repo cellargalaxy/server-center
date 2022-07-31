@@ -19,7 +19,7 @@ func init() {
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
-		Logger: util.GormLog{ShowSql: config.Config.ShowSql, IgnoreErrs: []error{gorm.ErrRecordNotFound}},
+		Logger: util.NewGormLog(util.NewDefaultGormSqlHandle()),
 	}
 
 	var err error
