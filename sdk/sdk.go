@@ -7,6 +7,7 @@ import (
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/go-resty/resty/v2"
+	"github.com/panjf2000/ants/v2"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
@@ -54,11 +55,35 @@ type ServerCenterClient struct {
 	handler    ServerCenterHandlerInter
 
 	conf model.ServerConfModel
-	once sync.Once
+	lock sync.Mutex
+	pool *ants.Pool
 }
 
+var clientLock sync.Mutex
+var clientMap = make(map[string]*ServerCenterClient)
+
 func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
-	return NewServerCenterClient(ctx, util.TimeoutDefault, util.RetryDefault, util.GetHttpClient(), handler)
+	if handler == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
+		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
+	}
+
+	clientLock.Lock()
+	defer clientLock.Unlock()
+
+	client, ok := clientMap[handler.GetServerName(ctx)]
+	if client != nil && ok {
+		return client, nil
+	}
+
+	var err error
+	client, err = NewServerCenterClient(ctx, util.TimeoutDefault, util.RetryDefault, util.GetHttpClient(), handler)
+	if err != nil {
+		return nil, err
+	}
+	clientMap[handler.GetServerName(ctx)] = client
+
+	return client, nil
 }
 
 func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int, httpClient *resty.Client, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
@@ -70,7 +95,7 @@ func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int
 	return client, nil
 }
 
-func (this *ServerCenterClient) StartWithInitConf(ctx context.Context) {
+func (this *ServerCenterClient) StartWithInitConf(ctx context.Context) error {
 	for {
 		_, err := this.GetAndParseLastServerConf(ctx)
 		if err == nil {
@@ -78,28 +103,45 @@ func (this *ServerCenterClient) StartWithInitConf(ctx context.Context) {
 		}
 		util.SleepWare(ctx, time.Second)
 	}
-	this.Start(ctx)
+	return this.Start(ctx)
 }
-func (this *ServerCenterClient) Start(ctx context.Context) {
-	this.once.Do(func() {
-		this.startConfAsync()
-	})
-}
-func (this *ServerCenterClient) startConfAsync() {
-	go func() {
-		ctx := util.GenCtx()
-		defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
-			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startConfAsync，结束")
-			util.SleepWare(ctx, util.MaxDuration(this.handler.GetInterval(ctx), time.Minute*5))
-			this.startConfAsync()
-		})
+func (this *ServerCenterClient) Start(ctx context.Context) error {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 
-		for {
-			ctx = util.ResetLogId(ctx)
-			this.GetAndParseLastServerConf(ctx)
-			util.SleepWare(ctx, this.handler.GetInterval(ctx))
+	if this.pool != nil && !this.pool.IsClosed() {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"name": this.getName(ctx)}).Warn("已启动")
+		return nil
+	}
+
+	var err error
+	this.pool, err = util.NewForeverSingleGoPool(ctx, this.getName(ctx), time.Second, this.startFlushServerConf)
+	if err != nil {
+		if this.pool != nil {
+			this.pool.Release()
 		}
-	}()
+		this.pool = nil
+		return err
+	}
+
+	return nil
+}
+func (this *ServerCenterClient) startFlushServerConf(ctx context.Context, cancel func()) {
+	defer util.Defer(func(err interface{}, stack string) {
+		if err != nil {
+			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startFlushServerConf，异常")
+		}
+	})
+
+	for {
+		ctx := util.ResetLogId(ctx)
+		this.GetAndParseLastServerConf(ctx)
+		util.SleepWare(ctx, this.handler.GetInterval(ctx))
+		if util.CtxDone(ctx) {
+			cancel()
+			return
+		}
+	}
 }
 
 var confLock sync.Mutex
@@ -390,7 +432,7 @@ func (this *ServerCenterClient) PingCheckAddress(ctx context.Context, addresses 
 	for i := range addresses {
 		wg.Add(1)
 		go func(address string) {
-			defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
+			defer util.Defer(func(err interface{}, stack string) {
 				wg.Done()
 				if err != nil {
 					logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Info("ping，异常")
@@ -490,4 +532,10 @@ func (this *ServerCenterClient) getAddress(ctx context.Context) string {
 }
 func (this *ServerCenterClient) genJWT(ctx context.Context) (string, string) {
 	return util.GenAuthorizationJWT(ctx, this.timeout, this.handler.GetSecret(ctx))
+}
+func (this *ServerCenterClient) getName(ctx context.Context) string {
+	if this.handler == nil {
+		return "ServerCenterClient"
+	}
+	return fmt.Sprintf("ServerCenterClient-%s", this.handler.GetServerName(ctx))
 }

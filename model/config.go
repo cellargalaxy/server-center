@@ -7,7 +7,6 @@ import (
 const (
 	DefaultServerName     = "server_center"
 	ListenAddress         = ":7557"
-	StaticPath            = "/static"
 	AddServerConfPath     = "/api/addServerConf"
 	RemoveServerConfPath  = "/api/removeServerConf"
 	GetLastServerConfPath = "/api/getLastServerConf"
@@ -18,7 +17,6 @@ const (
 
 type Config struct {
 	MysqlDsn  string   `yaml:"mysql_dsn" json:"-"`
-	ShowSql   bool     `yaml:"show_sql" json:"show_sql"`
 	Addresses []string `yaml:"addresses" json:"addresses"`
 	Secret    string   `yaml:"secret" json:"-"`
 

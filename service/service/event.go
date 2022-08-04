@@ -11,14 +11,18 @@ import (
 )
 
 func initEvent(ctx context.Context) {
-	flushEventSync()
+	var err error
+	_, err = util.NewForeverSingleGoPool(ctx, "插入批量事件", time.Second, startFlushEvent)
+	if err != nil {
+		panic(err)
+	}
 }
 
 var eventChan = make(chan model.Event, util.DbMaxBatchAddLength)
 
 func AddEventsAsync(ctx context.Context, object []model.Event) {
 	go func() {
-		defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
+		defer util.Defer(func(err interface{}, stack string) {
 			if err != nil {
 				logrus.WithContext(ctx).WithFields(logrus.Fields{"object": object, "err": err, "stack": stack}).Error("插入批量事件，异常")
 			}
@@ -50,22 +54,10 @@ func AddEvents(ctx context.Context, object []model.Event) {
 	}
 }
 
-func flushEventSync() {
-	ctx := util.GenCtx()
-	go func() {
-		defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
-			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Error("刷入事件，退出")
-			flushEventSync()
-		})
-
-		flushEvent(ctx)
-	}()
-}
-
-func flushEvent(ctx context.Context) {
+func startFlushEvent(ctx context.Context, cancel func()) {
 	list := make([]model.Event, 0, util.DbMaxBatchAddLength)
 
-	defer util.Defer(ctx, func(ctx context.Context, err interface{}, stack string) {
+	defer util.Defer(func(err interface{}, stack string) {
 		if err != nil {
 			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Error("刷入事件，异常")
 		}
@@ -82,17 +74,18 @@ func flushEvent(ctx context.Context) {
 			if len(list) < util.DbMaxBatchAddLength {
 				continue
 			}
-			ctx = util.ResetLogId(ctx)
+			ctx := util.ResetLogId(ctx)
 			db.AddManyEvent(ctx, list)
 			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
 		case <-time.After(time.Second):
 			if len(list) == 0 {
 				continue
 			}
-			ctx = util.ResetLogId(ctx)
+			ctx := util.ResetLogId(ctx)
 			db.AddManyEvent(ctx, list)
 			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
 		case <-ctx.Done():
+			cancel()
 			return
 		}
 	}
