@@ -19,3 +19,4 @@ server_center
 *.log
 *.db
 *.yml
+rsync.sh
