@@ -478,7 +478,7 @@ func (this *ServerCenterClient) analysisPing(ctx context.Context, jsonString str
 func (this *ServerCenterClient) requestPing(ctx context.Context, address string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
 		SetHeader(this.genJWT(ctx)).
-		Get(this.getUrl(ctx, address, util.PingPath))
+		Post(this.getUrl(ctx, address, util.PingPath))
 
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("ping，请求异常")

@@ -72,3 +72,33 @@ func TestAddEvent(test *testing.T) {
 	}
 	time.Sleep(time.Second * 3)
 }
+
+func TestPing(test *testing.T) {
+	ctx := util.GenCtx()
+	client, err := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})
+	if err != nil {
+		test.Error(err)
+		test.FailNow()
+	}
+	object, err := client.Ping(ctx, "http://127.0.0.1:7557")
+	test.Logf("object: %+v\r\n", util.ToJsonIndentString(object))
+	if err != nil {
+		test.Error(err)
+		test.FailNow()
+	}
+}
+
+func TestGetRemoteLastServerConf(test *testing.T) {
+	ctx := util.GenCtx()
+	client, err := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})
+	if err != nil {
+		test.Error(err)
+		test.FailNow()
+	}
+	object, err := client.GetRemoteLastServerConf(ctx)
+	test.Logf("object: %+v\r\n", util.ToJsonIndentString(object))
+	if err != nil {
+		test.Error(err)
+		test.FailNow()
+	}
+}
