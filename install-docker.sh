@@ -52,8 +52,8 @@ echo 'docker run'
 docker run -d \
   --restart=always \
   --name $server_name \
-  -v log:/log \
-  -v $server_name'_resource':/resource \
+  -v log:/log/log \
+  -v $server_name'_resource':/log/resource \
   -p $listen_port:7557 \
   -e server_name=$server_name \
   -e server_center_address=$server_center_address \
