@@ -59,29 +59,12 @@ type ServerCenterClient struct {
 	pool *ants.Pool
 }
 
-var clientLock sync.Mutex
-var clientMap = make(map[string]*ServerCenterClient)
-
 func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
-	if handler == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
-		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
-	}
-
-	clientLock.Lock()
-	defer clientLock.Unlock()
-
-	client, ok := clientMap[handler.GetServerName(ctx)]
-	if client != nil && ok {
-		return client, nil
-	}
-
 	var err error
 	client, err = NewServerCenterClient(ctx, util.TimeoutDefault, util.RetryDefault, util.GetHttpClient(), handler)
 	if err != nil {
 		return nil, err
 	}
-	clientMap[handler.GetServerName(ctx)] = client
 
 	return client, nil
 }
@@ -102,6 +85,9 @@ func (this *ServerCenterClient) StartWithInitConf(ctx context.Context) error {
 			break
 		}
 		util.SleepWare(ctx, time.Second)
+		if util.CtxDone(ctx) {
+			return nil
+		}
 	}
 	return this.Start(ctx)
 }
@@ -115,7 +101,7 @@ func (this *ServerCenterClient) Start(ctx context.Context) error {
 	}
 
 	var err error
-	this.pool, err = util.NewForeverSingleGoPool(ctx, this.getName(ctx), time.Second, this.startFlushServerConf)
+	this.pool, err = util.NewForeverSingleGoPool(ctx, this.getName(ctx), time.Second, this.flushServerConf)
 	if err != nil {
 		if this.pool != nil {
 			this.pool.Release()
@@ -126,10 +112,10 @@ func (this *ServerCenterClient) Start(ctx context.Context) error {
 
 	return nil
 }
-func (this *ServerCenterClient) startFlushServerConf(ctx context.Context, cancel func()) {
+func (this *ServerCenterClient) flushServerConf(ctx context.Context, cancel func()) {
 	defer util.Defer(func(err interface{}, stack string) {
 		if err != nil {
-			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("startFlushServerConf，异常")
+			logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err, "stack": stack}).Warn("flushServerConf，异常")
 		}
 	})
 
@@ -158,16 +144,16 @@ func (this *ServerCenterClient) GetAndParseLastServerConf(ctx context.Context) (
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.handler.GetServerName(ctx), "current_version": this.conf.Version}).Error("查询并解析最新服务配置，服务配置为空")
 		return nil, fmt.Errorf("查询并解析最新服务配置，服务配置为空")
 	}
+	err = this.handler.ParseConf(ctx, *object)
+	if err != nil {
+		return object, err
+	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"server_name": this.handler.GetServerName(ctx), "current_version": this.conf.Version, "last_version": object.Version}).Info("查询并解析最新服务配置，查询服务配置")
 	if object.Version <= this.conf.Version {
 		return nil, nil
 	}
 	if object.ConfText == this.conf.ConfText {
 		return nil, nil
-	}
-	err = this.handler.ParseConf(ctx, *object)
-	if err != nil {
-		return object, err
 	}
 	this.conf = *object
 	this.saveLocalFileServerConf(ctx, this.conf.ConfText)
@@ -492,7 +478,7 @@ func (this *ServerCenterClient) analysisPing(ctx context.Context, jsonString str
 func (this *ServerCenterClient) requestPing(ctx context.Context, address string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
 		SetHeader(this.genJWT(ctx)).
-		Get(this.getUrl(ctx, address, model.ListAllServerNamePath))
+		Get(this.getUrl(ctx, address, util.PingPath))
 
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("ping，请求异常")

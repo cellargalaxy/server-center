@@ -40,7 +40,7 @@ func Controller() error {
 }
 
 func staticCache(c *gin.Context) {
-	if strings.HasPrefix(c.Request.RequestURI, model.StaticPath) {
+	if strings.HasPrefix(c.Request.RequestURI, util.StaticPath) {
 		c.Header("Cache-Control", "max-age=86400")
 	}
 }

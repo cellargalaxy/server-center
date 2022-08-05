@@ -22,13 +22,19 @@ func init() {
 	if client == nil {
 		panic("创建ServerCenterClient为空")
 	}
-	client.StartWithInitConf(ctx)
+	err = client.StartWithInitConf(ctx)
+	if err != nil {
+		panic(err)
+	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{"Config": Config}).Info("加载配置")
 }
 
 func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config, error) {
 	if config.ClearEventSave <= 0 {
 		config.ClearEventSave = 1000000
+	}
+	if config.ClearConfigSave <= 0 {
+		config.ClearConfigSave = 100
 	}
 	return config, nil
 }
