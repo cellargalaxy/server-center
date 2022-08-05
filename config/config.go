@@ -6,6 +6,7 @@ import (
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/cellargalaxy/server_center/sdk"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 var Config = model.Config{}
@@ -36,6 +37,16 @@ func checkAndResetConfig(ctx context.Context, config model.Config) (model.Config
 	if config.ClearConfigSave <= 0 {
 		config.ClearConfigSave = 100
 	}
+
+	if config.Secret == "" {
+		go func() {
+			for i := 0; i < 100; i++ {
+				logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("加载配置，Secret为空")
+				util.Sleep(ctx, time.Second*10)
+			}
+		}()
+	}
+
 	return config, nil
 }
 
