@@ -106,7 +106,6 @@ func flushEvent(ctx context.Context, cancel func()) {
 			}
 			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
 		case <-ctx.Done():
-			cancel()
 			return
 		}
 	}

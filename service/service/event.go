@@ -85,7 +85,6 @@ func startFlushEvent(ctx context.Context, cancel func()) {
 			db.AddManyEvent(ctx, list)
 			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
 		case <-ctx.Done():
-			cancel()
 			return
 		}
 	}

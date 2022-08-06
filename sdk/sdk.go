@@ -124,7 +124,6 @@ func (this *ServerCenterClient) flushServerConf(ctx context.Context, cancel func
 		this.GetAndParseLastServerConf(ctx)
 		util.SleepWare(ctx, this.handler.GetInterval(ctx))
 		if util.CtxDone(ctx) {
-			cancel()
 			return
 		}
 	}
