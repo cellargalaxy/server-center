@@ -23,15 +23,12 @@ type GormEventHandle struct {
 }
 
 func (this GormEventHandle) Handle(ctx context.Context, begin time.Time, sql string, err error) {
-	if err != nil {
-		ignore := false
-		for i := range this.IgnoreErrs {
-			if errors.Is(err, this.IgnoreErrs[i]) {
-				ignore = true
-				break
-			}
-		}
-		if ignore {
+	if err == nil {
+		return
+	}
+	ignoreErrs := this.IgnoreErrs
+	for i := range ignoreErrs {
+		if errors.Is(err, ignoreErrs[i]) {
 			return
 		}
 	}
