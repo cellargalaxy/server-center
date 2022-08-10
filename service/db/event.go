@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"github.com/cellargalaxy/go_common/util"
+	common_model "github.com/cellargalaxy/go_common/model"
 	"github.com/cellargalaxy/server_center/db"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
@@ -10,7 +10,7 @@ import (
 
 func AddManyEvent(ctx context.Context, list []model.Event) {
 	left := 0
-	right := util.DbMaxBatchAddLength
+	right := common_model.DbMaxBatchAddLength
 	for true {
 		if left >= len(list) {
 			break
@@ -20,7 +20,7 @@ func AddManyEvent(ctx context.Context, list []model.Event) {
 		}
 		addEvents(ctx, list[left:right])
 		left = right
-		right += util.DbMaxBatchAddLength
+		right += common_model.DbMaxBatchAddLength
 	}
 }
 

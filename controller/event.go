@@ -14,9 +14,9 @@ func addEvent(ctx *gin.Context) {
 	err := ctx.BindJSON(&request)
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("插入批量事件，请求参数解析异常")
-		ctx.JSON(http.StatusOK, util.CreateResponseByErr(err))
+		ctx.JSON(http.StatusOK, util.NewHttpResponseByErr(err))
 		return
 	}
 	logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("插入批量事件")
-	ctx.JSON(http.StatusOK, util.CreateResponse(controller.AddEvent(ctx, request)))
+	ctx.JSON(http.StatusOK, util.NewHttpResponse(controller.AddEvent(ctx, request)))
 }

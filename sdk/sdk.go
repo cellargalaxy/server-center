@@ -247,7 +247,7 @@ func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, j
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，解析响应异常")
 		return nil, fmt.Errorf("查询最新服务配置，解析响应异常")
 	}
-	if response.Code != util.HttpSuccessCode {
+	if response.Code != common_model.HttpSuccessCode {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("查询最新服务配置，失败")
 		return nil, fmt.Errorf("查询最新服务配置，失败")
 	}
@@ -323,7 +323,7 @@ func (this *ServerCenterClient) analysisListAllServerName(ctx context.Context, j
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，解析响应异常")
 		return nil, fmt.Errorf("查询服务配置列表，解析响应异常")
 	}
-	if response.Code != util.HttpSuccessCode {
+	if response.Code != common_model.HttpSuccessCode {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("查询服务配置列表，失败")
 		return nil, fmt.Errorf("查询服务配置列表，失败")
 	}
@@ -379,7 +379,7 @@ func (this *ServerCenterClient) analysisAddEvent(ctx context.Context, jsonString
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("插入批量事件，解析响应异常")
 		return fmt.Errorf("插入批量事件，解析响应异常")
 	}
-	if response.Code != util.HttpSuccessCode {
+	if response.Code != common_model.HttpSuccessCode {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("插入批量事件，失败")
 		return fmt.Errorf("插入批量事件，失败")
 	}
@@ -468,7 +468,7 @@ func (this *ServerCenterClient) analysisPing(ctx context.Context, jsonString str
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("ping，解析响应异常")
 		return nil, fmt.Errorf("ping，解析响应异常")
 	}
-	if response.Code != util.HttpSuccessCode {
+	if response.Code != common_model.HttpSuccessCode {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("ping，失败")
 		return nil, fmt.Errorf("ping，失败")
 	}
@@ -477,7 +477,7 @@ func (this *ServerCenterClient) analysisPing(ctx context.Context, jsonString str
 func (this *ServerCenterClient) requestPing(ctx context.Context, address string) (string, error) {
 	response, err := this.httpClient.R().SetContext(ctx).
 		SetHeader(this.genJWT(ctx)).
-		Post(this.getUrl(ctx, address, util.PingPath))
+		Post(this.getUrl(ctx, address, common_model.PingPath))
 
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("ping，请求异常")

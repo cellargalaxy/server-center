@@ -3,6 +3,7 @@ package sdk
 import (
 	"context"
 	"fmt"
+	common_model "github.com/cellargalaxy/go_common/model"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
@@ -12,7 +13,7 @@ import (
 var addresses []string
 var secret string
 var client *ServerCenterClient
-var eventChan = make(chan model.Event, util.DbMaxBatchAddLength)
+var eventChan = make(chan model.Event, common_model.DbMaxBatchAddLength)
 
 func initServerCenter(ctx context.Context) {
 	var err error
@@ -68,7 +69,7 @@ func addEvent(ctx context.Context, event model.Event) {
 }
 
 func flushEvent(ctx context.Context, cancel func()) {
-	list := make([]model.Event, 0, util.DbMaxBatchAddLength)
+	list := make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 
 	defer util.Defer(func(err interface{}, stack string) {
 		if err != nil {
@@ -84,7 +85,7 @@ func flushEvent(ctx context.Context, cancel func()) {
 		select {
 		case event := <-eventChan:
 			list = append(list, event)
-			if len(list) < util.DbMaxBatchAddLength {
+			if len(list) < common_model.DbMaxBatchAddLength {
 				continue
 			}
 			ctx := util.ResetLogId(ctx)
@@ -93,7 +94,7 @@ func flushEvent(ctx context.Context, cancel func()) {
 			} else {
 				client.AddEvent(ctx, list)
 			}
-			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
+			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 		case <-time.After(time.Second):
 			if len(list) == 0 {
 				continue
@@ -104,7 +105,7 @@ func flushEvent(ctx context.Context, cancel func()) {
 			} else {
 				client.AddEvent(ctx, list)
 			}
-			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
+			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 		case <-ctx.Done():
 			return
 		}

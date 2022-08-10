@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	common_model "github.com/cellargalaxy/go_common/model"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/config"
 	"github.com/cellargalaxy/server_center/model"
@@ -18,7 +19,7 @@ func initEvent(ctx context.Context) {
 	}
 }
 
-var eventChan = make(chan model.Event, util.DbMaxBatchAddLength)
+var eventChan = make(chan model.Event, common_model.DbMaxBatchAddLength)
 
 func AddEventsAsync(ctx context.Context, object []model.Event) {
 	go func() {
@@ -55,7 +56,7 @@ func AddEvents(ctx context.Context, object []model.Event) {
 }
 
 func startFlushEvent(ctx context.Context, cancel func()) {
-	list := make([]model.Event, 0, util.DbMaxBatchAddLength)
+	list := make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 
 	defer util.Defer(func(err interface{}, stack string) {
 		if err != nil {
@@ -71,19 +72,19 @@ func startFlushEvent(ctx context.Context, cancel func()) {
 		select {
 		case event := <-eventChan:
 			list = append(list, event)
-			if len(list) < util.DbMaxBatchAddLength {
+			if len(list) < common_model.DbMaxBatchAddLength {
 				continue
 			}
 			ctx := util.ResetLogId(ctx)
 			db.AddManyEvent(ctx, list)
-			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
+			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 		case <-time.After(time.Second):
 			if len(list) == 0 {
 				continue
 			}
 			ctx := util.ResetLogId(ctx)
 			db.AddManyEvent(ctx, list)
-			list = make([]model.Event, 0, util.DbMaxBatchAddLength)
+			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 		case <-ctx.Done():
 			return
 		}
