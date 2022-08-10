@@ -88,6 +88,21 @@ func TestPing(test *testing.T) {
 	}
 }
 
+func TestListRemoteAllServerName(test *testing.T) {
+	ctx := util.GenCtx()
+	client, err := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})
+	if err != nil {
+		test.Error(err)
+		test.FailNow()
+	}
+	object, err := client.ListRemoteAllServerName(ctx)
+	test.Logf("object: %+v\r\n", util.ToJsonIndentString(object))
+	if err != nil {
+		test.Error(err)
+		test.FailNow()
+	}
+}
+
 func TestGetRemoteLastServerConf(test *testing.T) {
 	ctx := util.GenCtx()
 	client, err := sdk.NewDefaultServerCenterClient(ctx, &ServerCenterHandler{})

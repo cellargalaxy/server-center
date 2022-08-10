@@ -9,7 +9,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/panjf2000/ants/v2"
 	"github.com/sirupsen/logrus"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -221,60 +220,19 @@ func (this *ServerCenterClient) GetRemoteLastServerConfByServerName(ctx context.
 		return nil, nil
 	}
 	ctx = util.RmReqId(ctx)
-	var jsonString string
-	var object *model.ServerConfModel
-	var err error
-	for i := 0; i < this.retry; i++ {
-		jsonString, err = this.requestGetLastServerConf(ctx, serverName)
-		if err == nil {
-			object, err = this.analysisGetLastServerConf(ctx, jsonString)
-			if err == nil {
-				return object, err
-			}
-		}
-	}
-	return object, err
-}
-func (this *ServerCenterClient) analysisGetLastServerConf(ctx context.Context, jsonString string) (*model.ServerConfModel, error) {
 	type Response struct {
-		Code int                             `json:"code"`
-		Msg  string                          `json:"msg"`
+		common_model.HttpResponse
 		Data model.GetLastServerConfResponse `json:"data"`
 	}
 	var response Response
-	err := util.UnmarshalJsonString(jsonString, &response)
-	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，解析响应异常")
-		return nil, fmt.Errorf("查询最新服务配置，解析响应异常")
-	}
-	if response.Code != common_model.HttpSuccessCode {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("查询最新服务配置，失败")
-		return nil, fmt.Errorf("查询最新服务配置，失败")
-	}
-	return response.Data.Conf, nil
-}
-func (this *ServerCenterClient) requestGetLastServerConf(ctx context.Context, serverName string) (string, error) {
-	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(this.genJWT(ctx)).
-		SetQueryParam("server_name", serverName).
-		Get(this.GetUrl(ctx, model.GetLastServerConfPath))
-
-	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询最新服务配置，请求异常")
-		return "", fmt.Errorf("查询最新服务配置，请求异常")
-	}
-	if response == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("查询最新服务配置，响应为空")
-		return "", fmt.Errorf("查询最新服务配置，响应为空")
-	}
-	statusCode := response.StatusCode()
-	body := response.String()
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "len(body)": len(body)}).Info("查询最新服务配置，响应")
-	if statusCode != http.StatusOK {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("查询最新服务配置，响应码失败")
-		return "", fmt.Errorf("查询最新服务配置，响应码失败: %+v", statusCode)
-	}
-	return body, nil
+	err := util.HttpApiRetry(ctx, "查询最新服务配置", this.retry, []time.Duration{time.Microsecond}, &response, func() (*resty.Response, error) {
+		response, err := this.httpClient.R().SetContext(ctx).
+			SetHeader(this.genJWT(ctx)).
+			SetQueryParam("server_name", serverName).
+			Get(this.GetUrl(ctx, model.GetLastServerConfPath))
+		return response, err
+	})
+	return response.Data.Conf, err
 }
 
 func (this *ServerCenterClient) ListAllServerName(ctx context.Context) ([]string, error) {
@@ -297,118 +255,37 @@ func (this *ServerCenterClient) ListLocalAllServerName(ctx context.Context) ([]s
 }
 func (this *ServerCenterClient) ListRemoteAllServerName(ctx context.Context) ([]string, error) {
 	ctx = util.RmReqId(ctx)
-	var jsonString string
-	var object []string
-	var err error
-	for i := 0; i < this.retry; i++ {
-		jsonString, err = this.requestListAllServerName(ctx)
-		if err == nil {
-			object, err = this.analysisListAllServerName(ctx, jsonString)
-			if err == nil {
-				return object, err
-			}
-		}
-	}
-	return object, err
-}
-func (this *ServerCenterClient) analysisListAllServerName(ctx context.Context, jsonString string) ([]string, error) {
 	type Response struct {
-		Code int                             `json:"code"`
-		Msg  string                          `json:"msg"`
+		common_model.HttpResponse
 		Data model.ListAllServerNameResponse `json:"data"`
 	}
 	var response Response
-	err := util.UnmarshalJsonString(jsonString, &response)
-	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，解析响应异常")
-		return nil, fmt.Errorf("查询服务配置列表，解析响应异常")
-	}
-	if response.Code != common_model.HttpSuccessCode {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("查询服务配置列表，失败")
-		return nil, fmt.Errorf("查询服务配置列表，失败")
-	}
-	return response.Data.List, nil
-}
-func (this *ServerCenterClient) requestListAllServerName(ctx context.Context) (string, error) {
-	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(this.genJWT(ctx)).
-		Get(this.GetUrl(ctx, model.ListAllServerNamePath))
-
-	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("查询服务配置列表，请求异常")
-		return "", fmt.Errorf("查询服务配置列表，请求异常")
-	}
-	if response == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("查询服务配置列表，响应为空")
-		return "", fmt.Errorf("查询服务配置列表，响应为空")
-	}
-	statusCode := response.StatusCode()
-	body := response.String()
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "len(body)": len(body)}).Info("查询服务配置列表，响应")
-	if statusCode != http.StatusOK {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("查询服务配置列表，响应码失败")
-		return "", fmt.Errorf("查询服务配置列表，响应码失败: %+v", statusCode)
-	}
-	return body, nil
+	err := util.HttpApiRetry(ctx, "查询服务配置列表", this.retry, []time.Duration{time.Microsecond}, &response, func() (*resty.Response, error) {
+		response, err := this.httpClient.R().SetContext(ctx).
+			SetHeader(this.genJWT(ctx)).
+			Get(this.GetUrl(ctx, model.ListAllServerNamePath))
+		return response, err
+	})
+	return response.Data.List, err
 }
 
 func (this *ServerCenterClient) AddEvent(ctx context.Context, object []model.Event) error {
 	ctx = util.SetReqId(ctx)
-	var jsonString string
-	var err error
-	for i := 0; i < this.retry; i++ {
-		jsonString, err = this.requestAddEvent(ctx, object)
-		if err == nil {
-			err = this.analysisAddEvent(ctx, jsonString)
-			if err == nil {
-				return err
-			}
-		}
-	}
-	return err
-}
-func (this *ServerCenterClient) analysisAddEvent(ctx context.Context, jsonString string) error {
 	type Response struct {
-		Code int                    `json:"code"`
-		Msg  string                 `json:"msg"`
+		common_model.HttpResponse
 		Data model.AddEventResponse `json:"data"`
 	}
 	var response Response
-	err := util.UnmarshalJsonString(jsonString, &response)
-	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("插入批量事件，解析响应异常")
-		return fmt.Errorf("插入批量事件，解析响应异常")
-	}
-	if response.Code != common_model.HttpSuccessCode {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("插入批量事件，失败")
-		return fmt.Errorf("插入批量事件，失败")
-	}
-	return nil
-}
-func (this *ServerCenterClient) requestAddEvent(ctx context.Context, object []model.Event) (string, error) {
-	var req model.AddEventRequest
-	req.List = object
-	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(this.genJWT(ctx)).
-		SetBody(req).
-		Post(this.GetUrl(ctx, model.AddEventPath))
-
-	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("插入批量事件，请求异常")
-		return "", fmt.Errorf("插入批量事件，请求异常")
-	}
-	if response == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("插入批量事件，响应为空")
-		return "", fmt.Errorf("插入批量事件，响应为空")
-	}
-	statusCode := response.StatusCode()
-	body := response.String()
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "body": body}).Info("插入批量事件，响应")
-	if statusCode != http.StatusOK {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("插入批量事件，响应码失败")
-		return "", fmt.Errorf("插入批量事件，响应码失败: %+v", statusCode)
-	}
-	return body, nil
+	err := util.HttpApiRetry(ctx, "插入批量事件", this.retry, []time.Duration{time.Microsecond}, &response, func() (*resty.Response, error) {
+		var req model.AddEventRequest
+		req.List = object
+		response, err := this.httpClient.R().SetContext(ctx).
+			SetHeader(this.genJWT(ctx)).
+			SetBody(req).
+			Post(this.GetUrl(ctx, model.AddEventPath))
+		return response, err
+	})
+	return err
 }
 
 func (this *ServerCenterClient) PingCheckAddress(ctx context.Context, addresses []string) []string {
@@ -442,59 +319,18 @@ func (this *ServerCenterClient) PingCheckAddress(ctx context.Context, addresses 
 }
 func (this *ServerCenterClient) Ping(ctx context.Context, address string) (*common_model.PingResponse, error) {
 	ctx = util.RmReqId(ctx)
-	var jsonString string
-	var object *common_model.PingResponse
-	var err error
-	for i := 0; i < this.retry; i++ {
-		jsonString, err = this.requestPing(ctx, address)
-		if err == nil {
-			object, err = this.analysisPing(ctx, jsonString)
-			if err == nil {
-				return object, err
-			}
-		}
-	}
-	return object, err
-}
-func (this *ServerCenterClient) analysisPing(ctx context.Context, jsonString string) (*common_model.PingResponse, error) {
 	type Response struct {
-		Code int                       `json:"code"`
-		Msg  string                    `json:"msg"`
+		common_model.HttpResponse
 		Data common_model.PingResponse `json:"data"`
 	}
 	var response Response
-	err := util.UnmarshalJsonString(jsonString, &response)
-	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("ping，解析响应异常")
-		return nil, fmt.Errorf("ping，解析响应异常")
-	}
-	if response.Code != common_model.HttpSuccessCode {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"response": util.ToJsonString(response)}).Error("ping，失败")
-		return nil, fmt.Errorf("ping，失败")
-	}
-	return &response.Data, nil
-}
-func (this *ServerCenterClient) requestPing(ctx context.Context, address string) (string, error) {
-	response, err := this.httpClient.R().SetContext(ctx).
-		SetHeader(this.genJWT(ctx)).
-		Post(this.getUrl(ctx, address, common_model.PingPath))
-
-	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("ping，请求异常")
-		return "", fmt.Errorf("ping，请求异常")
-	}
-	if response == nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("ping，响应为空")
-		return "", fmt.Errorf("ping，响应为空")
-	}
-	statusCode := response.StatusCode()
-	body := response.String()
-	logrus.WithContext(ctx).WithFields(logrus.Fields{"statusCode": statusCode, "body": body}).Info("ping，响应")
-	if statusCode != http.StatusOK {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"StatusCode": statusCode}).Error("ping，响应码失败")
-		return "", fmt.Errorf("ping，响应码失败: %+v", statusCode)
-	}
-	return body, nil
+	err := util.HttpApiRetry(ctx, "ping", this.retry, []time.Duration{time.Microsecond}, &response, func() (*resty.Response, error) {
+		response, err := this.httpClient.R().SetContext(ctx).
+			SetHeader(this.genJWT(ctx)).
+			Post(this.getUrl(ctx, address, common_model.PingPath))
+		return response, err
+	})
+	return &response.Data, err
 }
 
 func (this *ServerCenterClient) GetUrl(ctx context.Context, path string) string {
