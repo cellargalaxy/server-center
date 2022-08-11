@@ -49,7 +49,7 @@ type ServerCenterHandlerInter interface {
 
 type ServerCenterClient struct {
 	timeout    time.Duration
-	retry      int
+	try        int
 	httpClient *resty.Client
 	handler    ServerCenterHandlerInter
 
@@ -60,7 +60,7 @@ type ServerCenterClient struct {
 
 func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
 	var err error
-	client, err = NewServerCenterClient(ctx, util.TimeoutDefault, util.RetryDefault, util.GetHttpClient(), handler)
+	client, err = NewServerCenterClient(ctx, util.TimeoutDefault, util.TryDefault, util.GetHttpClient(), handler)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func NewServerCenterClient(ctx context.Context, timeout time.Duration, retry int
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
 	}
-	client := &ServerCenterClient{timeout: timeout, retry: retry, httpClient: httpClient, handler: handler}
+	client := &ServerCenterClient{timeout: timeout, try: retry, httpClient: httpClient, handler: handler}
 	return client, nil
 }
 
@@ -225,7 +225,7 @@ func (this *ServerCenterClient) GetRemoteLastServerConfByServerName(ctx context.
 		Data model.GetLastServerConfResponse `json:"data"`
 	}
 	var response Response
-	err := util.HttpApiRetry(ctx, "查询最新服务配置", this.retry, []time.Duration{time.Microsecond}, &response, func() (*resty.Response, error) {
+	err := util.HttpApiWithTry(ctx, "查询最新服务配置", this.try, []time.Duration{0}, &response, func() (*resty.Response, error) {
 		response, err := this.httpClient.R().SetContext(ctx).
 			SetHeader(this.genJWT(ctx)).
 			SetQueryParam("server_name", serverName).
@@ -260,7 +260,7 @@ func (this *ServerCenterClient) ListRemoteAllServerName(ctx context.Context) ([]
 		Data model.ListAllServerNameResponse `json:"data"`
 	}
 	var response Response
-	err := util.HttpApiRetry(ctx, "查询服务配置列表", this.retry, []time.Duration{time.Microsecond}, &response, func() (*resty.Response, error) {
+	err := util.HttpApiWithTry(ctx, "查询服务配置列表", this.try, []time.Duration{0}, &response, func() (*resty.Response, error) {
 		response, err := this.httpClient.R().SetContext(ctx).
 			SetHeader(this.genJWT(ctx)).
 			Get(this.GetUrl(ctx, model.ListAllServerNamePath))
@@ -276,7 +276,7 @@ func (this *ServerCenterClient) AddEvent(ctx context.Context, object []model.Eve
 		Data model.AddEventResponse `json:"data"`
 	}
 	var response Response
-	err := util.HttpApiRetry(ctx, "插入批量事件", this.retry, []time.Duration{time.Microsecond}, &response, func() (*resty.Response, error) {
+	err := util.HttpApiWithTry(ctx, "插入批量事件", this.try, []time.Duration{0}, &response, func() (*resty.Response, error) {
 		var req model.AddEventRequest
 		req.List = object
 		response, err := this.httpClient.R().SetContext(ctx).
@@ -324,7 +324,7 @@ func (this *ServerCenterClient) Ping(ctx context.Context, address string) (*comm
 		Data common_model.PingResponse `json:"data"`
 	}
 	var response Response
-	err := util.HttpApiRetry(ctx, "ping", this.retry, []time.Duration{time.Microsecond}, &response, func() (*resty.Response, error) {
+	err := util.HttpApiWithTry(ctx, "ping", this.try, []time.Duration{0}, &response, func() (*resty.Response, error) {
 		response, err := this.httpClient.R().SetContext(ctx).
 			SetHeader(this.genJWT(ctx)).
 			Post(this.getUrl(ctx, address, common_model.PingPath))
