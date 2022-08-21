@@ -270,6 +270,10 @@ func (this *ServerCenterClient) ListRemoteAllServerName(ctx context.Context) ([]
 }
 
 func (this *ServerCenterClient) AddEvent(ctx context.Context, object []model.Event) error {
+	if this.getAddress(ctx) == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"object": object}).Warn("插入批量事件，地址为空")
+		return nil
+	}
 	ctx = util.SetReqId(ctx)
 	type Response struct {
 		common_model.HttpResponse
