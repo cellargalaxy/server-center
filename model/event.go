@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/cellargalaxy/go_common/model"
 	"github.com/cellargalaxy/go_common/util"
 	"time"
 )
@@ -21,7 +20,8 @@ func (this Event) String() string {
 }
 
 type EventModel struct {
-	model.Model
+	Id        int       `json:"id" form:"id" query:"id" gorm:"id;auto_increment;primary_key"`
+	CreatedAt time.Time `json:"created_at" form:"created_at" query:"created_at" gorm:"created_at"`
 	Event
 }
 

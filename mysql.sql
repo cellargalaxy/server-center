@@ -25,7 +25,6 @@ CREATE TABLE `event`
     `value`       double      NOT NULL DEFAULT 0 COMMENT '',
     `data`        text        NOT NULL DEFAULT '' COMMENT '',
     `created_at`  datetime    NOT NULL,
-    `updated_at`  datetime    NOT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_log_id` (`log_id`) USING BTREE,
     KEY `idx_server_name` (`server_name`) USING BTREE,
