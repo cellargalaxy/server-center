@@ -40,7 +40,7 @@ func initServerCenter(ctx context.Context) {
 		client.GetAndParseLastServerConf(ctx)
 	}
 
-	_, err = util.NewForeverSingleGoPool(ctx, "插入事件", time.Second, flushEvent)
+	_, err = util.NewDaemonSingleGoPool(ctx, "插入事件", time.Second, flushEvent)
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +68,7 @@ func addEvent(ctx context.Context, event model.Event) {
 	eventChan <- event
 }
 
-func flushEvent(ctx context.Context, cancel func()) {
+func flushEvent(ctx context.Context, pool *util.SingleGoPool) {
 	list := make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 
 	defer util.Defer(func(err interface{}, stack string) {

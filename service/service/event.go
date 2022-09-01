@@ -13,7 +13,7 @@ import (
 
 func initEvent(ctx context.Context) {
 	var err error
-	_, err = util.NewForeverSingleGoPool(ctx, "插入批量事件", time.Second, startFlushEvent)
+	_, err = util.NewDaemonSingleGoPool(ctx, "插入批量事件", time.Second, startFlushEvent)
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +55,7 @@ func AddEvents(ctx context.Context, object []model.Event) {
 	}
 }
 
-func startFlushEvent(ctx context.Context, cancel func()) {
+func startFlushEvent(ctx context.Context, pool *util.SingleGoPool) {
 	list := make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 
 	defer util.Defer(func(err interface{}, stack string) {
