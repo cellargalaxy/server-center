@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 func InsertEvents(ctx context.Context, object []model.EventModel) ([]model.EventModel, error) {
+	ctx = util.CopyCtx(ctx)
 	if len(object) == 0 {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Warn("插入批量事件，列表为空")
 		return object, nil

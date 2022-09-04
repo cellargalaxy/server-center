@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 func InsertServerConf(ctx context.Context, object model.ServerConfModel) (model.ServerConfModel, error) {
+	ctx = util.CopyCtx(ctx)
 	err := getDb(ctx).Create(&object).Error
 	if err != nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Warn("插入服务配置，异常")

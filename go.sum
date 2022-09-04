@@ -4,8 +4,8 @@ github.com/PuerkitoBio/goquery v1.8.0/go.mod h1:ypIiRMtY7COPGk+I/YbZLbxsxn9g5ejn
 github.com/andybalholm/cascadia v1.3.1/go.mod h1:R4bJ1UQfqADjvDa4P6HZHLh/3OxWWEqc0Sk8XGwHqvA=
 github.com/antonfisher/nested-logrus-formatter v1.3.1 h1:NFJIr+pzwv5QLHTPyKz9UMEoHck02Q9L0FP13b/xSbQ=
 github.com/antonfisher/nested-logrus-formatter v1.3.1/go.mod h1:6WTfyWFkBc9+zyBaKIqRrg/KwMqBbodBjgbHjDz7zjA=
-github.com/cellargalaxy/go_common v0.0.0-20220901134342-6fb99bd4c041 h1:5RXelNOCSMXgUZ3gr9pKi76yZw2oxeS6upxzWjtdtRs=
-github.com/cellargalaxy/go_common v0.0.0-20220901134342-6fb99bd4c041/go.mod h1:iQLo+DOEcJmGRmic4fYyevqnkzkA19bxdISSxGup9hs=
+github.com/cellargalaxy/go_common v0.0.0-20220903125342-5aa4f4286d97 h1:9LJNBOA1NiUoTduouYUnlACRsMqOaZ1lpgVHIVwz/MM=
+github.com/cellargalaxy/go_common v0.0.0-20220903125342-5aa4f4286d97/go.mod h1:iQLo+DOEcJmGRmic4fYyevqnkzkA19bxdISSxGup9hs=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
