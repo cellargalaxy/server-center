@@ -42,6 +42,12 @@ func (this GormEventHandle) Handle(ctx context.Context, begin time.Time, sql str
 	data := make(map[string]interface{})
 	data["sql"] = sql
 	data["elapsed"] = elapsed
-	data["err"] = err
+	AddDbErrEvent(ctx, name, err, data)
+}
+
+func AddDbErrEvent(ctx context.Context, name string, err interface{}, data map[string]interface{}) {
+	AddErrEvent(ctx, "db", name, 1, err, data)
+}
+func AddDbEvent(ctx context.Context, name string, data map[string]interface{}) {
 	AddEvent(ctx, "db", name, 1, data)
 }

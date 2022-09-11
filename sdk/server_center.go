@@ -53,6 +53,20 @@ func GetSecret(ctx context.Context) string {
 	return secret
 }
 
+func AddErrEvent(ctx context.Context, group, name string, value float64, err interface{}, data map[string]interface{}) {
+	if err == nil {
+		return
+	}
+	name += "异常"
+	if data == nil {
+		data = make(map[string]interface{})
+	}
+	_, ok := data["err"]
+	if !ok {
+		data["err"] = err
+	}
+	AddEvent(ctx, group, name, value, data)
+}
 func AddEvent(ctx context.Context, group, name string, value float64, data interface{}) {
 	var event model.Event
 	event.LogId = util.GetLogId(ctx)
