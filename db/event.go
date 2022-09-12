@@ -58,8 +58,8 @@ func whereEvent(ctx context.Context, where *gorm.DB, inquiry model.EventInquiry)
 	if inquiry.Name != "" {
 		where = getWhere(ctx, where).Where("event_name = ?", inquiry.Name)
 	}
-	if inquiry.EndCreatedAt.Unix() > 0 {
-		where = getWhere(ctx, where).Where("created_at < ?", inquiry.EndCreatedAt)
+	if inquiry.EndCreateTime.Unix() > 0 {
+		where = getWhere(ctx, where).Where("create_time < ?", inquiry.EndCreateTime)
 	}
 	return where
 }
@@ -67,7 +67,7 @@ func whereEvent(ctx context.Context, where *gorm.DB, inquiry model.EventInquiry)
 func SelectSomeEvent(ctx context.Context, inquiry model.EventInquiry) ([]model.EventModel, error) {
 	where := getDb(ctx)
 	where = whereEvent(ctx, where, inquiry)
-	where = where.Order("created_at desc")
+	where = where.Order("create_time desc")
 	if inquiry.Offset > 0 {
 		where = where.Offset(inquiry.Offset)
 	}

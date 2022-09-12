@@ -76,9 +76,7 @@ func AddEvent(ctx context.Context, group, name string, value float64, data inter
 	event.Name = name
 	event.Value = value
 	event.Data = fmt.Sprint(data)
-	addEvent(ctx, event)
-}
-func addEvent(ctx context.Context, event model.Event) {
+	event.CreateTime = time.Now()
 	eventChan <- event
 }
 

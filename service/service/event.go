@@ -50,6 +50,9 @@ func AddEvents(ctx context.Context, object []model.Event) {
 			if object[i].LogId <= 0 {
 				object[i].LogId = claims.LogId
 			}
+			if object[i].CreateTime.Unix() <= 0 {
+				object[i].CreateTime = time.Now()
+			}
 			eventChan <- object[i]
 		}
 	}
@@ -121,7 +124,7 @@ func ClearEvent(ctx context.Context) error {
 		return nil
 	}
 	var inquiry model.EventInquiry
-	inquiry.EndCreatedAt = object.CreatedAt
+	inquiry.EndCreateTime = object.CreateTime
 	err = db.RemoveEvent(ctx, inquiry)
 	return err
 }
