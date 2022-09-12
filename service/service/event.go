@@ -73,6 +73,8 @@ func startFlushEvent(ctx context.Context, pool *util.SingleGoPool) {
 
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case event := <-eventChan:
 			list = append(list, event)
 			if len(list) < common_model.DbMaxBatchAddLength {
@@ -88,8 +90,6 @@ func startFlushEvent(ctx context.Context, pool *util.SingleGoPool) {
 			ctx := util.ResetLogId(ctx)
 			db.AddManyEvent(ctx, list)
 			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
-		case <-ctx.Done():
-			return
 		}
 	}
 }
