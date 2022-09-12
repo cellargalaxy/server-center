@@ -62,26 +62,14 @@ func NewDefaultServerCenterClient(ctx context.Context, handler ServerCenterHandl
 	return client, nil
 }
 
-var clientLock sync.Mutex
-var clientMap = make(map[string]*ServerCenterClient)
-
 func NewServerCenterClient(ctx context.Context, timeout time.Duration, try int, httpClient *resty.Client, handler ServerCenterHandlerInter) (*ServerCenterClient, error) {
 	if handler == nil {
 		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Error("创建ServerCenterClient，handler为空")
 		return nil, fmt.Errorf("创建ServerCenterClient，handler为空")
 	}
 
-	clientLock.Lock()
-	defer clientLock.Unlock()
-
 	name := GenName(ctx, handler)
-	client := clientMap[name]
-	if client != nil {
-		return client, nil
-	}
-
 	client = &ServerCenterClient{timeout: timeout, try: try, httpClient: httpClient, handler: handler, name: name}
-	clientMap[name] = client
 	return client, nil
 }
 
