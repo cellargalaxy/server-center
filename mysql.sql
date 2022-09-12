@@ -17,19 +17,19 @@ create table `server_conf`
 CREATE TABLE `event`
 (
     `id`          int(11)      NOT NULL AUTO_INCREMENT,
-    `log_id`      bigint(20)   NOT NULL DEFAULT 0 COMMENT '',
-    `server_name` varchar(64)  NOT NULL DEFAULT '' COMMENT '',
-    `ip`          varchar(16)  NOT NULL DEFAULT '' COMMENT '',
-    `group`       varchar(256) NOT NULL DEFAULT '' COMMENT '',
-    `name`        varchar(256) NOT NULL DEFAULT '' COMMENT '',
-    `value`       double       NOT NULL DEFAULT 0 COMMENT '',
-    `data`        text         NOT NULL DEFAULT '' COMMENT '',
+    `log_id`      bigint(20)   NOT NULL DEFAULT 0,
+    `server_name` varchar(64)  NOT NULL DEFAULT '',
+    `ip`          varchar(16)  NOT NULL DEFAULT '',
+    `group`       varchar(256) NOT NULL DEFAULT '',
+    `name`        varchar(256) NOT NULL DEFAULT '',
+    `value`       double       NOT NULL DEFAULT 0,
+    `data`        text         NOT NULL DEFAULT '',
     `create_time` datetime     NOT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_log_id` (`log_id`) USING BTREE,
     KEY `idx_server_name` (`server_name`) USING BTREE,
-    KEY idx_group (`group`) USING BTREE,
-    KEY idx_name (`name`) USING BTREE,
+    KEY `idx_group` (`group`) USING BTREE,
+    KEY `idx_name` (`name`) USING BTREE,
     KEY `idx_create_time` (`create_time`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
