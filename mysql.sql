@@ -27,10 +27,8 @@ CREATE TABLE `event`
     `create_time` datetime     NOT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_log_id` (`log_id`) USING BTREE,
-    KEY `idx_server_name` (`server_name`) USING BTREE,
-    KEY `idx_group` (`group`) USING BTREE,
-    KEY `idx_name` (`name`) USING BTREE,
-    KEY `idx_create_time` (`create_time`) USING BTREE
+    KEY `idx_group` (`group`, `name`) USING BTREE,
+    KEY `idx_create_time` (`create_time`, `group`, `name`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
