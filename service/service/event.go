@@ -75,7 +75,10 @@ func startFlushEvent(ctx context.Context, pool *util.SingleGoPool) {
 		select {
 		case <-ctx.Done():
 			return
-		case event := <-eventChan:
+		case event, ok := <-eventChan:
+			if !ok {
+				return
+			}
 			list = append(list, event)
 			if len(list) < common_model.DbMaxBatchAddLength {
 				continue

@@ -147,7 +147,10 @@ func flushEvent(ctx context.Context, pool *util.SingleGoPool) {
 			}
 			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 			return
-		case event := <-eventChan:
+		case event, ok := <-eventChan:
+			if !ok {
+				return
+			}
 			ctx := util.ResetLogId(ctx)
 			flushCountEvent(ctx)
 			list = append(list, event)
