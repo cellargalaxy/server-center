@@ -76,7 +76,7 @@ func AddCountEvent(ctx context.Context, group, name string, value float64, durat
 	event.Name = name
 	event.Value += value
 	event.Duration = duration
-	countEventMap.Store(key, value)
+	countEventMap.Store(key, event)
 }
 func flushCountEvent(ctx context.Context) {
 	countEventMap.Range(func(key, value interface{}) bool {
