@@ -7,6 +7,7 @@ import (
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/model"
 	"github.com/sirupsen/logrus"
+	"sync"
 	"time"
 )
 
@@ -14,6 +15,8 @@ var addresses []string
 var secret string
 var client *ServerCenterClient
 var eventChan = make(chan model.Event, common_model.DbMaxBatchAddLength)
+var localCache *util.LocalCache
+var countEventMap sync.Map
 
 func initServerCenter(ctx context.Context) {
 	var err error
@@ -44,6 +47,11 @@ func initServerCenter(ctx context.Context) {
 	if err != nil {
 		panic(err)
 	}
+
+	localCache, err = util.NewDefaultLocalCache(ctx)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func ListAddress(ctx context.Context) []string {
@@ -53,6 +61,37 @@ func GetSecret(ctx context.Context) string {
 	return secret
 }
 
+type CountEvent struct {
+	Group    string        `json:"group"`
+	Name     string        `json:"name"`
+	Value    float64       `json:"value"`
+	Duration time.Duration `json:"duration"`
+}
+
+func AddCountEvent(ctx context.Context, group, name string, value float64, duration time.Duration) {
+	key := fmt.Sprintf("%s-%s", group, name)
+	object, _ := countEventMap.Load(key)
+	event, _ := object.(CountEvent)
+	event.Group = group
+	event.Name = name
+	event.Value += value
+	event.Duration = duration
+	countEventMap.Store(key, value)
+}
+func flushCountEvent(ctx context.Context) {
+	countEventMap.Range(func(key, value interface{}) bool {
+		event, ok := value.(CountEvent)
+		if !ok {
+			return true
+		}
+		if !localCache.TryLock(ctx, fmt.Sprintf("addCountEvent-lock-%s-%s", event.Group, event.Name), event.Duration) {
+			return true
+		}
+		AddEvent(ctx, event.Group, event.Name, event.Value, nil)
+		countEventMap.Delete(key)
+		return true
+	})
+}
 func AddErrEvent(ctx context.Context, group, name string, value float64, err interface{}, data map[string]interface{}) {
 	if err == nil {
 		return
@@ -96,13 +135,25 @@ func flushEvent(ctx context.Context, pool *util.SingleGoPool) {
 	for {
 		select {
 		case <-ctx.Done():
+			ctx := util.ResetLogId(ctx)
+			flushCountEvent(ctx)
+			if len(list) == 0 {
+				continue
+			}
+			if client == nil {
+				logrus.WithContext(ctx).WithFields(logrus.Fields{"list": list}).Error("插入事件，serverCenterClient为空")
+			} else {
+				client.AddEvent(ctx, list)
+			}
+			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 			return
 		case event := <-eventChan:
+			ctx := util.ResetLogId(ctx)
+			flushCountEvent(ctx)
 			list = append(list, event)
 			if len(list) < common_model.DbMaxBatchAddLength {
 				continue
 			}
-			ctx := util.ResetLogId(ctx)
 			if client == nil {
 				logrus.WithContext(ctx).WithFields(logrus.Fields{"list": list}).Error("插入事件，serverCenterClient为空")
 			} else {
@@ -110,10 +161,11 @@ func flushEvent(ctx context.Context, pool *util.SingleGoPool) {
 			}
 			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 		case <-time.After(time.Second):
+			ctx := util.ResetLogId(ctx)
+			flushCountEvent(ctx)
 			if len(list) == 0 {
 				continue
 			}
-			ctx := util.ResetLogId(ctx)
 			if client == nil {
 				logrus.WithContext(ctx).WithFields(logrus.Fields{"list": list}).Error("插入事件，serverCenterClient为空")
 			} else {
