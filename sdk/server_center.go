@@ -16,7 +16,7 @@ var secret string
 var client *ServerCenterClient
 var eventChan = make(chan model.Event, common_model.DbMaxBatchAddLength)
 var localCache *util.LocalCache
-var countEventMap sync.Map
+var aggEventMap sync.Map
 
 func initServerCenter(ctx context.Context) {
 	var err error
@@ -61,34 +61,50 @@ func GetSecret(ctx context.Context) string {
 	return secret
 }
 
-type CountEvent struct {
+type AggType string
+
+const (
+	AggType_sum AggType = "sum"
+	AggType_avg AggType = "avg"
+)
+
+type AggEvent struct {
 	Group    string        `json:"group"`
 	Name     string        `json:"name"`
-	Value    float64       `json:"value"`
+	AggType  AggType       `json:"agg_type"`
 	Duration time.Duration `json:"duration"`
+	Sum      float64       `json:"sum"`
+	Count    int           `json:"count"`
 }
 
-func AddCountEvent(ctx context.Context, group, name string, value float64, duration time.Duration) {
+func AddAggEvent(ctx context.Context, group, name string, value float64, aggType AggType, duration time.Duration) {
 	key := fmt.Sprintf("%s-%s", group, name)
-	object, _ := countEventMap.Load(key)
-	event, _ := object.(CountEvent)
+	object, _ := aggEventMap.Load(key)
+	event, _ := object.(AggEvent)
 	event.Group = group
 	event.Name = name
-	event.Value += value
+	event.AggType = aggType
 	event.Duration = duration
-	countEventMap.Store(key, event)
+	event.Sum += value
+	event.Count++
+	aggEventMap.Store(key, event)
 }
-func flushCountEvent(ctx context.Context) {
-	countEventMap.Range(func(key, value interface{}) bool {
-		event, ok := value.(CountEvent)
+func flushAggEvent(ctx context.Context) {
+	aggEventMap.Range(func(key, value interface{}) bool {
+		event, ok := value.(AggEvent)
 		if !ok {
 			return true
 		}
-		if !localCache.TryLock(ctx, fmt.Sprintf("addCountEvent-lock-%s-%s", event.Group, event.Name), event.Duration) {
+		if !localCache.TryLock(ctx, fmt.Sprintf("addAggEvent-lock-%s-%s", event.Group, event.Name), event.Duration) {
 			return true
 		}
-		AddEvent(ctx, event.Group, event.Name, event.Value, nil)
-		countEventMap.Delete(key)
+		val := event.Sum
+		switch event.AggType {
+		case AggType_avg:
+			val = event.Sum / float64(event.Count)
+		}
+		AddEvent(ctx, event.Group, event.Name, val, nil)
+		aggEventMap.Delete(key)
 		return true
 	})
 }
@@ -136,7 +152,7 @@ func flushEvent(ctx context.Context, pool *util.SingleGoPool) {
 		select {
 		case <-ctx.Done():
 			ctx := util.ResetLogId(ctx)
-			flushCountEvent(ctx)
+			flushAggEvent(ctx)
 			if len(list) == 0 {
 				continue
 			}
@@ -152,7 +168,7 @@ func flushEvent(ctx context.Context, pool *util.SingleGoPool) {
 				return
 			}
 			ctx := util.ResetLogId(ctx)
-			flushCountEvent(ctx)
+			flushAggEvent(ctx)
 			list = append(list, event)
 			if len(list) < common_model.DbMaxBatchAddLength {
 				continue
@@ -165,7 +181,7 @@ func flushEvent(ctx context.Context, pool *util.SingleGoPool) {
 			list = make([]model.Event, 0, common_model.DbMaxBatchAddLength)
 		case <-time.After(time.Second):
 			ctx := util.ResetLogId(ctx)
-			flushCountEvent(ctx)
+			flushAggEvent(ctx)
 			if len(list) == 0 {
 				continue
 			}
