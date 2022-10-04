@@ -61,7 +61,7 @@ func (this *ServerCenterHandler) ParseConf(ctx context.Context, object model.Ser
 	var config model.Config
 	err := util.UnmarshalYamlString(object.ConfText, &config)
 	if err != nil {
-		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("反序列化配置异常")
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"ServerName": object.ServerName, "Version": object.Version, "err": err}).Error("反序列化配置异常")
 		return err
 	}
 	config, err = checkAndResetConfig(ctx, config)
