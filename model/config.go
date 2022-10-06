@@ -36,7 +36,7 @@ type Config struct {
 type ClearEventConfig struct {
 	Group   string `yaml:"group" json:"group"`
 	Name    string `yaml:"name" json:"name"`
-	SaveDay int    `yaml:"name" json:"save_day"`
+	SaveDay int    `yaml:"save_day" json:"save_day"`
 }
 
 func (this Config) String() string {
