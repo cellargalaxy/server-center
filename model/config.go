@@ -28,8 +28,15 @@ type Config struct {
 	PullSyncHost   string `yaml:"pull_sync_host" json:"pull_sync_host"`
 	PullSyncSecret string `yaml:"pull_sync_secret" json:"-"`
 
-	ClearEventCron string `yaml:"clear_event_cron" json:"clear_event_cron"`
-	ClearEventSave int    `yaml:"clear_event_save" json:"clear_event_save"`
+	ClearEventCron string             `yaml:"clear_event_cron" json:"clear_event_cron"`
+	ClearEventSave int                `yaml:"clear_event_save" json:"clear_event_save"`
+	ClearEvents    []ClearEventConfig `yaml:"clear_events" json:"clear_events"`
+}
+
+type ClearEventConfig struct {
+	Group   string `yaml:"group" json:"group"`
+	Name    string `yaml:"name" json:"name"`
+	SaveDay int    `yaml:"name" json:"save_day"`
 }
 
 func (this Config) String() string {
