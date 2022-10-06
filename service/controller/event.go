@@ -10,3 +10,8 @@ func AddEvent(ctx context.Context, request model.AddEventRequest) (*model.AddEve
 	service.AddEventsAsync(ctx, request.List)
 	return &model.AddEventResponse{}, nil
 }
+
+func RemoveEvent(ctx context.Context, request model.RemoveEventRequest) (*model.RemoveEventResponse, error) {
+	err := service.RemoveEvent(ctx, request.EventInquiry)
+	return &model.RemoveEventResponse{}, err
+}

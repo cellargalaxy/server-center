@@ -134,6 +134,14 @@ func AddEvent(ctx context.Context, group, name string, value float64, data inter
 	event.CreateTime = time.Now()
 	eventChan <- event
 }
+func RemoveEvent(ctx context.Context, group string, endCreateTime time.Time) error {
+	if client == nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"group": group, "endCreateTime": endCreateTime}).Warn("删除事件，serverCenterClient为空")
+		return fmt.Errorf("删除事件，serverCenterClient为空")
+	}
+	err := client.RemoveEvent(ctx, group, endCreateTime)
+	return err
+}
 
 func flushEvent(ctx context.Context, pool *util.SingleGoPool) {
 	list := make([]model.Event, 0, common_model.DbMaxBatchAddLength)

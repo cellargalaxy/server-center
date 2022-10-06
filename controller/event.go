@@ -20,3 +20,15 @@ func addEvent(ctx *gin.Context) {
 	logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("插入批量事件")
 	ctx.JSON(http.StatusOK, util.NewHttpResponse(controller.AddEvent(ctx, request)))
 }
+
+func removeEvent(ctx *gin.Context) {
+	var request model.RemoveEventRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"err": err}).Error("删除事件，请求参数解析异常")
+		ctx.JSON(http.StatusOK, util.NewHttpResponseByErr(err))
+		return
+	}
+	logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("删除事件")
+	ctx.JSON(http.StatusOK, util.NewHttpResponse(controller.RemoveEvent(ctx, request)))
+}

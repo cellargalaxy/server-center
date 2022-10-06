@@ -298,6 +298,38 @@ func (this *ServerCenterClient) AddEvent(ctx context.Context, object []model.Eve
 	})
 	return err
 }
+func (this *ServerCenterClient) RemoveEvent(ctx context.Context, group string, endCreateTime time.Time) error {
+	if this.getAddress(ctx) == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"group": group, "endCreateTime": endCreateTime}).Warn("删除事件，地址为空")
+		return nil
+	}
+	if group == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("删除事件，Group为空")
+		return fmt.Errorf("删除事件，Group为空")
+	}
+	if endCreateTime.Unix() <= 0 {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("删除事件，endCreateTime为空")
+		return fmt.Errorf("删除事件，endCreateTime为空")
+	}
+
+	ctx = util.SetReqId(ctx)
+	type Response struct {
+		common_model.HttpResponse
+		Data model.RemoveEventResponse `json:"data"`
+	}
+	var response Response
+	err := util.HttpApiWithTry(ctx, "删除事件", this.try, nil, &response, func() (*resty.Response, error) {
+		var req model.RemoveEventRequest
+		req.Group = group
+		req.EndCreateTime = endCreateTime
+		response, err := this.httpClient.R().SetContext(ctx).
+			SetHeader(this.genJWT(ctx)).
+			SetBody(req).
+			Post(this.GetUrl(ctx, model.RemoveEventPath))
+		return response, err
+	})
+	return err
+}
 
 func (this *ServerCenterClient) PingCheckAddress(ctx context.Context, addresses []string) []string {
 	listChan := make(chan string, len(addresses))

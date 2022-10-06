@@ -58,3 +58,18 @@ type AddEventResponse struct {
 func (this AddEventResponse) String() string {
 	return "-"
 }
+
+type RemoveEventRequest struct {
+	EventInquiry
+}
+
+func (this RemoveEventRequest) String() string {
+	return util.ToJsonString(this)
+}
+
+type RemoveEventResponse struct {
+}
+
+func (this RemoveEventResponse) String() string {
+	return util.ToJsonString(this)
+}

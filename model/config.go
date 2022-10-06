@@ -13,6 +13,7 @@ const (
 	ListServerConfPath    = "/api/listServerConf"
 	ListAllServerNamePath = "/api/listAllServerName"
 	AddEventPath          = "/api/addEvent"
+	RemoveEventPath       = "/api/removeEvent"
 )
 
 type Config struct {

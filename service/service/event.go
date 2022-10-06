@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	common_model "github.com/cellargalaxy/go_common/model"
 	"github.com/cellargalaxy/go_common/util"
 	"github.com/cellargalaxy/server_center/config"
@@ -129,5 +130,18 @@ func ClearEvent(ctx context.Context) error {
 	var inquiry model.EventInquiry
 	inquiry.EndCreateTime = object.CreateTime
 	err = db.RemoveEvent(ctx, inquiry)
+	return err
+}
+
+func RemoveEvent(ctx context.Context, inquiry model.EventInquiry) error {
+	if inquiry.Group == "" {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("删除事件，Group为空")
+		return fmt.Errorf("删除事件，Group为空")
+	}
+	if inquiry.EndCreateTime.Unix() <= 0 {
+		logrus.WithContext(ctx).WithFields(logrus.Fields{}).Info("删除事件，EndCreateTime为空")
+		return fmt.Errorf("删除事件，EndCreateTime为空")
+	}
+	err := db.RemoveEvent(ctx, inquiry)
 	return err
 }
