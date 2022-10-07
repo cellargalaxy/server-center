@@ -1,8 +1,8 @@
 github.com/BurntSushi/toml v1.2.0 h1:Rt8g24XnyGTyglgET/PRUNlrUeu9F5L+7FilkXfZgs0=
 github.com/antonfisher/nested-logrus-formatter v1.3.1 h1:NFJIr+pzwv5QLHTPyKz9UMEoHck02Q9L0FP13b/xSbQ=
 github.com/antonfisher/nested-logrus-formatter v1.3.1/go.mod h1:6WTfyWFkBc9+zyBaKIqRrg/KwMqBbodBjgbHjDz7zjA=
-github.com/cellargalaxy/go_common v0.0.0-20221006092252-bad2ec60af48 h1:xHbq1OWG7IsglbOk9yeDSAvIAwEbcde9N2FhM60sG8o=
-github.com/cellargalaxy/go_common v0.0.0-20221006092252-bad2ec60af48/go.mod h1:9stkq8BPX41qy5CyvHur+WfmD7gpYfvHk8MvQK/jTfE=
+github.com/cellargalaxy/go_common v0.0.0-20221007081428-f87392a19701 h1:8KblgWEPTO3NF6DEKJjtUjDIW1+/b/OVrkt93mT2k6I=
+github.com/cellargalaxy/go_common v0.0.0-20221007081428-f87392a19701/go.mod h1:6NDW8OvZKWS68a4Rpsw0g8j2vc8Dl6irGpaix5Lp+VI=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
