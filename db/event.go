@@ -53,7 +53,7 @@ func whereEvent(ctx context.Context, where *gorm.DB, inquiry model.EventInquiry)
 		where = getWhere(ctx, where).Where("ip = ?", inquiry.Ip)
 	}
 	if inquiry.Group != "" {
-		where = getWhere(ctx, where).Where("event_group = ?", inquiry.Group)
+		where = getWhere(ctx, where).Where("group = ?", inquiry.Group)
 	}
 	if inquiry.Name != "" {
 		where = getWhere(ctx, where).Where("event_name = ?", inquiry.Name)
